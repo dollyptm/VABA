@@ -1,0 +1,28 @@
+# VABA - Rewards Program Rules
+VABA’s rewards are for training. Banko can explain rules and summarize points; redemption requires your confirmation in the UI.
+
+Earning Points
+- Base accrual: 1 point per $1 on transactions with transaction_type in ('purchase','benefit_purchase')
+- Computed from the transactions table for a user’s accounts
+- Optional category bonuses (examples): groceries +5%, travel +10%, dining +8%
+
+Redemption Tiers (examples)
+- Cashback $5 -> 500 points
+- Cashback $10 -> 950 points
+- Cashback $25 -> 2250 points
+- Account Bonus $15 -> 1200 points
+- Account Bonus $50 -> 3800 points
+- Premium Upgrade Credit -> 1500 points
+- Shopping Voucher $30 -> 2800 points
+
+Redemption Flow
+1) Choose a tier on the Benefits page
+2) Confirm selection
+3) System records a loyalty_redemption transaction (points deduction may be simulated in training)
+
+Ask Banko
+- "How many points do I have?"
+- "Am I eligible for $10 cashback?"
+- "How are points calculated?"
+
+Figures are for training and may vary per session.

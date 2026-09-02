@@ -1,0 +1,39 @@
+!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Docs & Index</title>
+</head>
+<body class="bg-gray-50 p-8">
+  <h1 class="text-2xl font-bold mb-4">Knowledge Docs</h1>
+
+  <form action="/docs/upload" method="POST" enctype="multipart/form-data" class="flex gap-2 mb-6">
+    <input type="file" name="file" class="border p-2 rounded bg-white">
+    <button class="px-4 py-2 bg-blue-600 text-white rounded">Upload</button>
+  </form>
+
+  <form action="/docs/reindex" method="POST" class="mb-6">
+    <button class="px-4 py-2 bg-green-600 text-white rounded">Rebuild Index</button>
+  </form>
+
+  <h2 class="text-xl font-semibold mb-2">Files</h2>
+  <div class="space-y-2">
+    {% for f in files %}
+      <div class="flex items-center justify-between bg-white border rounded p-2">
+        <span class="text-gray-800 break-all">{{ f }}</span>
+        <form action="/docs/delete" method="POST" onsubmit="return confirm('Delete this file?');">
+          <input type="hidden" name="file" value="{{ f }}">
+          <button class="px-3 py-1 bg-red-600 text-white rounded text-sm">Delete</button>
+        </form>
+      </div>
+    {% else %}
+      <div class="text-gray-500">No files yet. Upload a .pdf or .txt</div>
+    {% endfor %}
+  </div>
+
+  <div class="mt-8">
+    <a href="/banko" class="text-blue-700 underline">Back to Chat</a>
+  </div>
+</body>
+</html>

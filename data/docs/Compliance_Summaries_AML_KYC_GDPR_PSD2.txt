@@ -1,0 +1,19 @@
+# VABA - Compliance Summaries (Training)
+These are simplified summaries for educational use.
+
+AML / KYC
+- KYC verifies identity via document checks
+- AML monitors for suspicious activity and enforces thresholds and reviews
+- Risk-based approach: higher-risk activity may require additional checks
+
+GDPR (EU Privacy)
+- Lawful bases for processing; minimize data collection
+- Rights: access, rectification, erasure (production contexts)
+- Retention limits; delete data when no longer needed
+
+PSD2 (EU Payments)
+- SCA: Strong Customer Authentication principles
+- Third-party access allowed with user consent and secure APIs
+- Clear audit trails and revocation mechanisms
+
+Banko should not give final legal approvals; escalate to compliance for official decisions.

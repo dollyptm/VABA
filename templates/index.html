@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VABA Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .vulnerability-warning {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+  
+  /* Sidebar Toggle Styles */
+  .sidebar {
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(0);
+  }
+  
+  .sidebar.hidden {
+    transform: translateX(-100%);
+  }
+  
+  .main-content {
+    transition: margin-left 0.3s ease-in-out;
+    margin-left: 25%; /* 1/4 width when sidebar visible */
+  }
+  
+  .main-content.expanded {
+    margin-left: 60px; /* Leave space for toggle button when sidebar hidden */
+  }
+  
+  .toggle-btn {
+    transition: all 0.3s ease;
+    z-index: 1000;
+    width: 40px;
+    height: 40px;
+  }
+  
+  /* User Avatar Dropdown Styles */
+  .user-dropdown {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: white;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    z-index: 1000;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .dropdown-content.show {
+    display: block;
+  }
+  
+  .dropdown-item {
+    color: #374151;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s;
+  }
+  
+  .dropdown-item:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .dropdown-item i {
+    margin-right: 8px;
+    width: 16px;
+  }
+  
+  .avatar-container {
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  
+  .avatar-container:hover {
+    transform: scale(1.05);
+  }
+</style>
+</head>
+<body class="bg-gray-100 font-sans">
+    
+
+<div class="min-h-screen flex relative">
+  <!-- Sidebar Toggle Button -->
+  <button onclick="toggleSidebar()" class="toggle-btn fixed top-4 left-4 z-50 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-lg">
+    <i id="toggleIcon" class="fas fa-bars"></i>
+  </button>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar w-1/4 bg-blue p-4 space-y-4 shadow-lg fixed h-full overflow-y-auto">
+    <div class="mt-12"> <!-- Add margin to avoid overlap with toggle button -->
+      <h3 class="text-lg font-semibold text-gray-700">VABA</h3>
+      
+      <nav class="text-gray-600 mt-4">
+        <a href="/home" class="flex items-center py-2 hover:bg-blue-50">
+          <i class="fas fa-home mr-2"></i> Home
+        </a>
+        <a href="/profile" class="flex items-center py-2 hover:bg-blue-50">
+          <i class="fas fa-user mr-2"></i> Profile Management
+        </a>
+        <a href="/transfer" class="flex items-center py-2 hover:bg-blue-50">
+          <i class="fas fa-exchange-alt mr-2"></i> Money Transfer
+        </a>
+                  <a href="/payment-hub" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-store mr-2"></i> Payment Hub
+          </a>
+        
+        <a href="/statements" class="flex items-center py-2 hover:bg-blue-50">
+          <i class="fas fa-file-alt mr-2"></i> Export Statements
+        </a>
+        <a href="/banko" class="flex items-center py-2 hover:bg-blue-50 bg-blue-100 text-blue-700">
+          <i class="fas fa-robot mr-2"></i> Banko AI Assistant
+        </a>
+        <a href="/llm-vulns" class="flex items-center py-2 hover:bg-blue-50 text-purple-700">
+          <i class="fas fa-bug mr-2"></i> OWASP LLM Vulns
+        </a>
+        <a href="/benefits" class="flex items-center py-2 hover:bg-blue-50">
+          <i class="fas fa-gift mr-2"></i> Benefits & Rewards
+        </a>
+        <a href="/admin" class="flex items-center py-2 hover:bg-blue-50 text-red-600">
+          <i class="fas fa-cog mr-2"></i> Admin Panel
+        </a>
+        <a href="/logout" class="flex items-center py-2 hover:bg-blue-50 text-gray-500">
+          <i class="fas fa-sign-out-alt mr-2"></i> Logout
+        </a>
+      </nav>
+    </div>
+  </aside>
+  
+  
+  <!-- Chat interface -->
+  <main id="mainContent" class="main-content w-full bg-white shadow-lg min-h-screen">
+    <div class="p-6">
+      <!-- Header with User Info -->
+      <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800">Banko AI Assistant</h1>
+          <p class="text-gray-600 mt-1">
+            Chat with your AI banking assistant
+            {% if user and user.is_admin %}<span class="text-red-600 font-semibold">(Admin Mode)</span>{% endif %}
+          </p>
+        </div>
+        
+        <!-- User Avatar Dropdown -->
+        <div class="user-dropdown">
+          <div class="avatar-container flex flex-col items-center" onclick="toggleDropdown()">
+            <img src="/static/profilepic.jpeg" alt="Profile" class="w-12 h-12 rounded-full object-cover border-2 border-blue-200 hover:border-blue-400">
+            <span class="text-xs text-gray-600 mt-1 font-medium">
+              {% if user %}{{ user.first_name }}{% else %}Guest{% endif %}
+            </span>
+            {% if user and user.is_admin %}
+              <span class="text-xs text-red-500 font-bold">ADMIN</span>
+            {% endif %}
+          </div>
+          <div class="dropdown-content" id="userDropdown">
+            <div class="px-4 py-3 border-b border-gray-200">
+              <p class="text-sm font-semibold text-gray-900">
+                {% if user %}{{ user.full_name }}{% else %}Guest User{% endif %}
+              </p>
+              <p class="text-sm text-gray-500">
+                {% if user %}{{ user.email }}{% else %}guest@example.com{% endif %}
+              </p>
+              {% if user %}
+                <p class="text-xs text-blue-600">ID: {{ user.user_id }}</p>
+              {% endif %}
+            </div>
+            <a href="/home" class="dropdown-item">
+              <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="/profile" class="dropdown-item">
+              <i class="fas fa-user"></i> View Profile
+            </a>
+            {% if user and user.is_admin %}
+              <a href="/admin" class="dropdown-item text-purple-600">
+                <i class="fas fa-shield-alt"></i> Admin Panel
+              </a>
+            {% endif %}
+            <div class="border-t border-gray-200"></div>
+            <a href="/logout" class="dropdown-item text-red-600">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Content -->
+        <div class="flex flex-col h-full">
+    
+    <!-- Chat messages -->
+    <section class="flex-1 overflow-y-auto mb-4">
+        <!-- Loop through messages -->
+        {% for message in chat %}
+            {% if message.class != 'User' %}
+                <!-- Bot message -->
+                <div class="flex justify-start items-end" data-read-aloud="{{ message.text }}">
+                    <div class="flex items-end mr-2">
+                    <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-sm text-white">B</div>
+                    </div>
+                    <div class="max-w-xl bg-blue-100 rounded-xl p-4">
+                        {% if demo and selected == 'LLM03' %}
+                          <!-- Intentionally unsafe render only when LLM03 is active -->
+                          <p class="text-gray-800"><strong>Banko Bot:</strong> {{ message.text|safe }}</p>
+                        {% else %}
+                          <p class="text-gray-800"><strong>Banko Bot:</strong> {{ message.text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% elif message.class == 'User' %}
+                <!-- User message -->
+                <div class="flex justify-end items-end">
+                    <div class="max-w-xl bg-green-100 rounded-xl p-4">
+                        <p class="text-gray-800"><strong>You:</strong> {{ message.text }}</p>
+                    </div>
+                    <div class="flex items-end ml-2">
+                    <div class="h-8 w-8 rounded-full bg-gray-500 flex items-center justify-center text-sm text-white">U</div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </section>
+    <div id="typing-indicator" class="text-sm text-gray-500 mb-2 hidden">Banko Bot is typing...</div>
+    
+    <!-- Message input -->
+    <footer class="mt-auto">
+        <form id="chat-form" class="flex w-full items-center gap-2" method="post" action="/banko">
+            <input id="chat-input" type="text" name="message" placeholder="Type your message here" class="flex-grow p-2 border-2 border-gray-300 rounded-l-md focus:outline-none focus:border-blue-500">
+            <button type="button" id="start-btn" class="px-4 py-2 text-white bg-gray-500 rounded-l-none rounded-r-md hover:bg-gray-700 focus:outline-none">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button id="chat-send" type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-r-md hover:bg-blue-700 focus:outline-none">
+              Send
+            </button>
+            <button id="chat-clear" type="button" class="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600 focus:outline-none" title="Clear chat">
+              Clear
+            </button>
+            <label class="ml-2 inline-flex items-center text-sm text-gray-600" title="Use lighter, friendly prompt for general chat">
+              <input id="convo-toggle" type="checkbox" class="mr-1" {% if conversational %}checked{% endif %}> Conversational
+            </label>
+        </form>
+      </footer>
+      </div>    
+    </div>
+  </main>
+</div>
+<script>
+    // Safely enable speech recognition only if supported
+    try {
+      if (window.webkitSpeechRecognition) {
+        var recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        var textbox = document.querySelector('input[name="message"]');
+        document.querySelector('#start-btn').onclick = function() {
+          try { recognition.start(); } catch(e) { console.warn('Speech start failed', e); }
+        };
+        recognition.onresult = function(event) {
+          try {
+            var speechResult = event.results[0][0].transcript;
+            textbox.value = speechResult;
+          } catch(e) { console.warn('Speech onresult failed', e); }
+        };
+        recognition.onspeechend = function() { try { recognition.stop(); } catch(e) {} };
+        recognition.onerror = function(event) { console.warn('Speech recognition error', event && event.error); };
+      } else {
+        // If unsupported, disable mic button
+        const micBtn = document.getElementById('start-btn');
+        if (micBtn) {
+          micBtn.disabled = true;
+          micBtn.title = 'Speech recognition not supported in this browser';
+        }
+      }
+    } catch (err) {
+      console.warn('Speech init error', err);
+    }
+
+
+    window.onload = function() {
+      document.querySelectorAll('[data-read-aloud]').forEach(element => {
+        const messageText = element.getAttribute('data-read-aloud');
+        if (messageText) {
+          readAloud(messageText);
+        }
+      });
+    };
+
+    function readAloud(text) {
+    var utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    speechSynthesis.speak(utterance);
+    };
+
+    // Sidebar toggle functionality
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const mainContent = document.getElementById('mainContent');
+      const toggleIcon = document.getElementById('toggleIcon');
+      
+      sidebar.classList.toggle('hidden');
+      mainContent.classList.toggle('expanded');
+      
+      // Change icon based on sidebar state
+      if (sidebar.classList.contains('hidden')) {
+        toggleIcon.className = 'fas fa-bars';
+      } else {
+        toggleIcon.className = 'fas fa-times';
+      }
+    }
+
+    // User dropdown functionality
+    function toggleDropdown() {
+      const dropdown = document.getElementById('userDropdown');
+      dropdown.classList.toggle('show');
+    }
+
+    // Close dropdown when clicking outside
+    window.onclick = function(event) {
+      if (!event.target.matches('.avatar-container') && !event.target.closest('.avatar-container')) {
+        const dropdowns = document.getElementsByClassName('dropdown-content');
+        for (let i = 0; i < dropdowns.length; i++) {
+          const openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+          }
+        }
+      }
+    }
+
+    // Chat AJAX submit to avoid full page reload and preserve history
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+    const typing = document.getElementById('typing-indicator');
+    const section = document.querySelector('section.flex-1');
+
+    function renderChat(messages) {
+      section.innerHTML = '';
+      messages.forEach(m => {
+        if (m.class !== 'User') {
+          section.insertAdjacentHTML('beforeend', `
+            <div class="flex justify-start items-end" data-read-aloud="${m.text.replace(/"/g,'&quot;')}">
+              <div class="flex items-end mr-2">
+                <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-sm text-white">B</div>
+              </div>
+              <div class="max-w-xl bg-blue-100 rounded-xl p-4">
+                ${ (window.APP_DEMO_MODE && window.APP_SELECTED_VULN === 'LLM03') ? `<p class=\"text-gray-800\"><strong>Banko Bot:</strong> ${m.text}</p>` : `<p class=\"text-gray-800\"><strong>Banko Bot:</strong> ${m.text.replace(/</g,'&lt;')}</p>` }
+              </div>
+            </div>`);
+        } else {
+          section.insertAdjacentHTML('beforeend', `
+            <div class="flex justify-end items-end">
+              <div class="max-w-xl bg-green-100 rounded-xl p-4">
+                <p class="text-gray-800"><strong>You:</strong> ${m.text.replace(/</g,'&lt;')}</p>
+              </div>
+              <div class="flex items-end ml-2">
+                <div class="h-8 w-8 rounded-full bg-gray-500 flex items-center justify-center text-sm text-white">U</div>
+              </div>
+            </div>`);
+        }
+      });
+      section.scrollTop = section.scrollHeight;
+    }
+    chatForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      typing.classList.remove('hidden');
+      const formData = new FormData(chatForm);
+      const params = new URLSearchParams();
+      for (const [k, v] of formData.entries()) params.append(k, v);
+      // Add typing bubble inside chat area for better visibility
+      const typingBubbleId = 'typing-bubble';
+      section.insertAdjacentHTML('beforeend', `
+        <div id="${typingBubbleId}" class="flex justify-start items-end mb-2">
+          <div class="flex items-end mr-2">
+            <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-sm text-white">B</div>
+          </div>
+          <div class="max-w-xl bg-blue-50 rounded-xl p-4 text-gray-600">
+            <span class="animate-pulse">Banko Bot is typing...</span>
+          </div>
+        </div>`);
+      const res = await fetch('/banko?ajax=1', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'fetch' },
+        body: params
+      });
+      const data = await res.json();
+      typing.classList.add('hidden');
+      const bubble = document.getElementById(typingBubbleId);
+      if (bubble) bubble.remove();
+      renderChat(data.chat);
+      chatInput.value = '';
+    });
+
+    // Expose mode flags for client rendering decisions
+    window.APP_DEMO_MODE = {{ 1 if demo else 0 }};
+    window.APP_SELECTED_VULN = {{ ('"' + selected + '"') if selected else 'null' }};
+
+    // Clear chat button
+    document.getElementById('chat-clear').addEventListener('click', async function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        let res = await fetch('/banko/clear', {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'fetch',
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          credentials: 'include',
+          body: ''
+        });
+        if (res.status === 401) {
+          alert('Your session has expired. Please log in again.');
+          window.location.href = '/login';
+          return;
+        }
+        if (!res.ok) throw new Error('clear endpoint failed');
+        let data = await res.json();
+        renderChat(data.chat || []);
+      } catch (err) {
+        // Fallback to original ajax clear path
+        const params = new URLSearchParams();
+        params.append('action', 'clear');
+        const res2 = await fetch('/banko?ajax=1', {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'fetch',
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          credentials: 'include',
+          body: params
+        });
+        const data2 = await res2.json();
+        renderChat(data2.chat || []);
+      }
+      return false;
+    });
+
+    // Conversational toggle handler
+    (function(){
+      const toggle = document.getElementById('convo-toggle');
+      if (!toggle) return;
+      toggle.addEventListener('change', async function() {
+        try {
+          const form = new URLSearchParams();
+          form.append('conversational', this.checked ? 'on' : 'off');
+          const res = await fetch('/chat/mode', { method: 'POST', headers: { 'X-Requested-With': 'fetch', 'Content-Type': 'application/x-www-form-urlencoded' }, body: form });
+          // No reload necessary; server flag switches prompt selection on next message
+        } catch (e) {
+          console.warn('Toggle conversational failed', e);
+        }
+      });
+    })();
+
+
+  </script>
+  
+</body>
+</html>

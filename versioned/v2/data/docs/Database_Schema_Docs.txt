@@ -1,0 +1,52 @@
+# VABA - Database Schema Documentation
+
+Tables
+users
+- id (PK)
+- first_name, last_name, username, email, password_hash
+- Profile & KYC: bio, date_of_birth, gender, address_*, phone, kyc_status, kyc_*
+- Preferences: preferred_language, time_zone, notification_preferences
+- Audit: last_login, login_count, failed_login_attempts
+- Status: account_status, profile_completion_percentage
+
+accounts
+- id (PK)
+- account_number (unique), user_id (FK -> users.id)
+- account_type (checking, savings), balance, created_at
+
+transactions
+- id (PK)
+- from_account_id (FK -> accounts.id) nullable for deposits/redemptions
+- to_account_id (FK -> accounts.id) nullable for purchases/withdrawals
+- amount, transaction_type (purchase, transfer, deposit, loyalty_redemption, admin_adjustment), description, status, created_at
+
+benefits
+- id (PK)
+- user_id (FK -> users.id), benefit_type (cashback, voucher, upgrade), amount, applied_by (FK -> users.id), applied_at
+
+Relationships
+- accounts.user_id -> users.id
+- transactions.from_account_id / to_account_id -> accounts.id
+- benefits.user_id -> users.id
+
+Example Queries
+My balances (by account)
+SELECT account_type, balance
+FROM accounts
+WHERE user_id = :user_id
+ORDER BY created_at DESC;
+
+Recent activity (5 latest)
+SELECT amount, transaction_type, description, created_at
+FROM transactions t
+JOIN accounts a ON t.from_account_id = a.id OR t.to_account_id = a.id
+WHERE a.user_id = :user_id
+ORDER BY created_at DESC
+LIMIT 5;
+
+Rewards points basis (sum eligible spend -> points)
+SELECT COALESCE(SUM(CASE WHEN transaction_type IN ('purchase','benefit_purchase')
+                         THEN amount ELSE 0 END), 0) AS total_spent
+FROM transactions t
+JOIN accounts a ON t.from_account_id = a.id
+WHERE a.user_id = :user_id;

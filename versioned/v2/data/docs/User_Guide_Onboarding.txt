@@ -1,0 +1,42 @@
+# VABA - User Guide & Onboarding
+Welcome to VABA (Vulnerable AI Banking Application). Inside VABA, your AI assistant is Banko.
+
+This app is for education only. Do not use real personal data.
+
+Getting Started
+1) Open an account
+   - Eligibility: adults with a valid email/phone
+   - Required info: name, email, phone, address, date of birth
+   - KYC: upload a clear image/PDF of your ID (Profile -> KYC)
+   - Review time: training-only; status may update quickly
+
+2) Login / Logout
+   - Log in with the credentials you registered with
+   - Use the top navigation to log out when finished
+
+3) Profile Management
+   - Update bio, contact info, preferences (language, time zone, notifications)
+   - KYC upload at Profile -> KYC
+
+4) Viewing Balances & Transactions
+   - Dashboard/Home: balances, recent transactions, summaries
+   - Statements: download or review summaries
+
+5) Transfers
+   - Transfers page to move funds between your accounts
+   - Shows applicable limits/fees and processing estimate
+
+6) Using Banko (Chatbot)
+   - Go to /banko to chat with Banko, your VABA assistant
+   - Ask about balances, transactions, rewards rules, or app usage
+   - Banko can also use uploaded docs (/docs) and summarize DB data when appropriate
+
+7) Docs Center
+   - Upload PDFs/TXTs at /docs, then click Rebuild Index so Banko can use them
+
+Tips
+- Keep questions short and specific
+- Rewards: ask "How many points do I have?" or "Am I eligible for $10 cashback?"
+- KYC: ask "What is KYC?" or "Where do I upload my ID?"
+
+This guide reflects the training build of VABA and may differ from production systems.

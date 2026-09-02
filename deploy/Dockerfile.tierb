@@ -1,0 +1,37 @@
+# Tier B sandbox image.
+#
+# Tier B runs real processes on an --internal network with no egress, so anything the lab
+# needs must already be in the image: it cannot pip install at run time. That constraint
+# is deliberate rather than inconvenient, because a sandbox that can fetch code at run
+# time is not a sandbox.
+#
+# Built from a clean slim base rather than layering onto banko-app-runtime: Tier B needs
+# none of that image's langchain or openai weight. `lab_llm` uses only the standard
+# library unless the openai backend is selected, which Tier B may not do because it holds
+# no credentials.
+#
+# BUILD: a plain `docker build` works on a host whose Docker bridge resolves DNS,
+# which is the normal case and is verified on the current host:
+#
+#   docker build -f deploy/Dockerfile.tierb -t <tag> .
+#
+# FALLBACK: if the default bridge cannot resolve (seen on the original host), pip
+# cannot reach PyPI during the build. BuildKit rejects custom networks outright, so
+# the legacy builder is needed:
+#
+#   DOCKER_BUILDKIT=0 docker build --network banko-lab -f deploy/Dockerfile.tierb -t <tag> .
+#
+# This affects the build only; at run time the tier's own network policy applies.
+
+FROM python:3.11-slim
+
+# Pinned to the 2.x line. The upstream LLM-Security sample targets mcp 1.x and imports
+# `mcp.server.fastmcp.FastMCP`, which 2.0 removed; the equivalent is
+# `mcp.server.mcpserver.MCPServer`, with the same .tool() and .run(transport=...) shape.
+RUN pip install --no-cache-dir "mcp>=2,<3" \
+ && python -c "from mcp.server.mcpserver import MCPServer; from mcp import ClientSession, StdioServerParameters; from mcp.client.stdio import stdio_client; print('mcp ready')"
+
+# Decoy files are written into a tmpfs $HOME by the payload at run time rather than
+# baked here, so the zero-mount rule holds and nothing survives the run.
+ENV HOME=/tmp \
+    PYTHONDONTWRITEBYTECODE=1

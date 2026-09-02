@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Banko V2 Security Catalog</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <main class="max-w-6xl mx-auto p-6">
+    <p class="text-sm font-semibold text-slate-500">Banko V2 Lab</p>
+    <h1 class="text-3xl font-bold">Security Catalog</h1>
+    <p class="text-slate-600 mt-2 max-w-3xl">
+      Everything in one index. The distinction that matters is on the right of each row:
+      whether it is a <strong>simulation</strong> you can demonstrate anywhere, or a lab
+      that <strong>genuinely executes</strong> and therefore costs money, runs real
+      processes, or runs attacker code.
+    </p>
+
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
+      <a href="{{ request.script_root }}/llm-vulns" class="bg-white border rounded-lg p-5 shadow-sm hover:bg-slate-50">
+        <div class="text-3xl font-bold">{{ vulns | length }}</div>
+        <div class="font-medium mt-1">LLM Catalog</div>
+        <div class="text-xs text-slate-500 mt-1">Reference entries. Simulation only.</div>
+      </a>
+      <a href="{{ request.script_root }}/vaba" class="bg-white border rounded-lg p-5 shadow-sm hover:bg-slate-50">
+        <div class="text-3xl font-bold">{{ scenarios | length }}</div>
+        <div class="font-medium mt-1">VABA Scenarios</div>
+        <div class="text-xs text-slate-500 mt-1">Agentic attack paths. Simulation only.</div>
+      </a>
+      <a href="{{ request.script_root }}/labs" class="bg-white border rounded-lg p-5 shadow-sm hover:bg-slate-50">
+        <div class="text-3xl font-bold">{{ live | selectattr('implemented') | list | length }}</div>
+        <div class="font-medium mt-1">Live Labs</div>
+        <div class="text-xs text-amber-700 mt-1">Genuinely execute. Spend to date ${{ '%.4f' % budget.spent }} of ${{ '%.2f' % budget.cap }}.</div>
+      </a>
+    </section>
+
+    <section class="bg-white border rounded-lg p-5 shadow-sm mb-6">
+      <h2 class="text-lg font-semibold mb-1">Execution tiers</h2>
+      <p class="text-sm text-slate-600 mb-4">
+        What a lab is allowed to do is decided by its tier, and enforced at dispatch rather
+        than by convention. A lab cannot acquire a capability its tier forbids.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm border">
+          <thead class="bg-slate-50 text-left">
+            <tr>
+              <th class="p-2 border-b">Tier</th><th class="p-2 border-b">What executes</th>
+              <th class="p-2 border-b">Network</th><th class="p-2 border-b">Credentials</th>
+              <th class="p-2 border-b">Labs</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tier_id, tier in tiers.items() %}
+            <tr>
+              <td class="p-2 border-b font-mono">{{ tier_id }}</td>
+              <td class="p-2 border-b">{{ tier.summary }}</td>
+              <td class="p-2 border-b font-mono text-xs">{{ tier.network }}</td>
+              <td class="p-2 border-b">{{ 'permitted' if tier.credentials_allowed else 'refused' }}</td>
+              <td class="p-2 border-b">{{ live | selectattr('tier', 'equalto', tier_id) | selectattr('implemented') | list | length }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="bg-white border rounded-lg p-5 shadow-sm mb-6">
+      <h2 class="text-lg font-semibold mb-3">Live labs</h2>
+      <div class="divide-y">
+        {% for lab in live %}
+        <div class="py-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded">{{ lab.id }}</span>
+            <span class="text-xs px-2 py-1 rounded
+              {% if lab.tier == 'A' %}bg-blue-100 text-blue-800
+              {% elif lab.tier == 'B' %}bg-orange-100 text-orange-800
+              {% else %}bg-red-100 text-red-800{% endif %}">Tier {{ lab.tier }} · {{ lab.tier_name }}</span>
+            {% if lab.implemented %}
+            <a href="{{ request.script_root }}/labs/{{ lab.id }}" class="font-medium text-blue-700 hover:underline">{{ lab.title }}</a>
+            {% else %}
+            <span class="font-medium text-slate-500">{{ lab.title }}</span>
+            <span class="text-xs px-2 py-1 rounded bg-slate-100 text-slate-600">planned</span>
+            {% endif %}
+          </div>
+          {% if lab.summary %}<p class="text-sm text-slate-600 mt-1">{{ lab.summary }}</p>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="bg-white border rounded-lg p-5 shadow-sm">
+        <h2 class="text-lg font-semibold mb-3">VABA scenarios <span class="text-xs font-normal text-slate-500">simulation only</span></h2>
+        <div class="divide-y">
+          {% for s in scenarios %}
+          <a href="{{ request.script_root }}/vaba/{{ s.id }}" class="block py-2 hover:bg-slate-50">
+            <span class="text-xs font-mono font-bold text-purple-700">{{ s.id }}</span>
+            <span class="text-sm ml-2">{{ s.title }}</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="bg-white border rounded-lg p-5 shadow-sm">
+        <h2 class="text-lg font-semibold mb-3">LLM catalog <span class="text-xs font-normal text-slate-500">reference</span></h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 text-sm">
+          {% for vid, v in vulns.items() %}
+          <div class="py-1"><span class="font-mono text-xs text-slate-500">{{ vid }}</span> {{ v.title }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

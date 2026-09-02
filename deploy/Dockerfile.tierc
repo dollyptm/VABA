@@ -1,0 +1,32 @@
+# Tier C sandbox image.
+#
+# Tier C is where attacker code genuinely executes, so this is deliberately the *smallest*
+# image in the project rather than the largest. Every package present is something a
+# payload could reach for once it has execution. The containment (--network none,
+# --read-only, no mounts, uid 65534, --rm) is the control; a minimal image is depth behind it.
+#
+# NO TORCH, MEASURED: modelscan plus scikit-learn is 309 MB and pulls no torch.
+# The vulnerability these labs teach lives in `pickle`, not in torch: a model artefact is a
+# pickle, unsafe opcodes execute on load, and modelscan detects them by scanning opcodes.
+# Reusing the 5.95 GB garak image or building a torch-based one would cost 13x the space
+# and hand the most dangerous tier the largest attack surface, for no change in the lesson.
+#
+# Difference from the upstream lab, stated rather than hidden: OffensiveLabs/Model-Backdoor
+# demonstrates this through `torch.save`/`torch.load` specifically. Here the artefact is a
+# plain pickle of the same shape. The payload mechanism, the execution, and the modelscan
+# detection are identical; only the loading API differs.
+#
+# No artefact is baked in. Tier C has no network at run time, so the labs generate their
+# own clean and backdoored artefacts inside the sandbox tmpfs, which also means nothing
+# malicious is stored in the image or on the host.
+#
+# BUILD: a plain `docker build` works where the Docker bridge resolves DNS. If it does
+# not (seen on the original host), use: DOCKER_BUILDKIT=0 docker build --network banko-lab
+FROM python:3.11-slim
+
+RUN pip install --no-cache-dir modelscan scikit-learn \
+ && python -c "import modelscan, sklearn; print('modelscan', modelscan.__version__ if hasattr(modelscan,'__version__') else 'ok')" \
+ && python -c "import importlib.util as u; assert u.find_spec('torch') is None, 'torch leaked into the Tier C image'"
+
+ENV HOME=/tmp \
+    PYTHONDONTWRITEBYTECODE=1

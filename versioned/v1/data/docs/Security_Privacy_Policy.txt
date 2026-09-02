@@ -1,0 +1,18 @@
+# VABA - Security & Privacy (Training)
+This outlines how the training build handles data. Not legal advice.
+
+Data Handling
+- Personal data: name, email, phone, address, DOB, preferences, limited KYC metadata
+- Storage: CockroachDB (bank schema: users, accounts, transactions, benefits); KYC files on disk for demo
+- Passwords: stored as hashes; sessions: cookie-based
+- LLM usage: Banko may use de-identified context; minimize sensitive content
+
+Privacy
+- Purpose: hands-on education
+- Retention: datasets may reset; do not upload real personal data
+- Rights: for production, rights include access/rectification/erasure; in training, contact instructor
+
+Operational Security (High-Level)
+- Separate configs for dev vs prod recommended
+- Periodic backups for resets
+- Avoid real secrets in training environments

@@ -1,0 +1,17 @@
+# VABA - Risk Management Guidelines (Training)
+
+Authentication & Sessions
+- Use strong passwords in real systems
+- Session timeouts and CSRF protections are expected in production
+
+Change Management
+- Code changes should be reviewed and tested in staging
+- Track changes and approvals
+
+Incident Response
+- Define severity levels and SLAs (training context)
+- Notify users in case of material data exposure in real deployments
+
+Backups & Recovery
+- Back up databases regularly
+- Test restoration procedures

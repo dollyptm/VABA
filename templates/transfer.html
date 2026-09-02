@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Money Transfer - Vulnerable Banking App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    .vulnerability-warning {
+      background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+    
+    /* Sidebar Toggle Styles */
+    .sidebar {
+      transition: transform 0.3s ease-in-out;
+      transform: translateX(0);
+    }
+    
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+    
+    .main-content {
+      transition: margin-left 0.3s ease-in-out;
+      margin-left: 25%; /* 1/4 width when sidebar visible */
+    }
+    
+    .main-content.expanded {
+      margin-left: 60px; /* Leave space for toggle button when sidebar hidden */
+    }
+    
+    .toggle-btn {
+      transition: all 0.3s ease;
+      z-index: 1000;
+      width: 40px;
+      height: 40px;
+    }
+    
+    /* User Avatar Dropdown Styles */
+    .user-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      right: 0;
+      background-color: white;
+      min-width: 200px;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      border-radius: 8px;
+      z-index: 1000;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .dropdown-content.show {
+      display: block;
+    }
+    
+    .dropdown-item {
+      color: #374151;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      transition: background-color 0.2s;
+    }
+    
+    .dropdown-item:hover {
+      background-color: #f3f4f6;
+    }
+    
+    .dropdown-item i {
+      margin-right: 8px;
+      width: 16px;
+    }
+    
+    .avatar-container {
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    
+    .avatar-container:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans">
+  
+
+  <div class="min-h-screen flex relative">
+    <!-- Sidebar Toggle Button -->
+    <button onclick="toggleSidebar()" class="toggle-btn fixed top-4 left-4 z-50 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-lg">
+      <i id="toggleIcon" class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar w-1/4 bg-blue p-4 space-y-4 shadow-lg fixed h-full overflow-y-auto">
+      <div class="mt-12"> <!-- Add margin to avoid overlap with toggle button -->
+        <h3 class="text-lg font-semibold text-gray-700">VABA</h3>
+        
+        <nav class="text-gray-600 mt-4">
+          <a href="/home" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-home mr-2"></i> Home
+          </a>
+          <a href="/profile" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-user mr-2"></i> Profile Management
+          </a>
+          <a href="/transfer" class="flex items-center py-2 hover:bg-blue-50 bg-blue-100 text-blue-700">
+            <i class="fas fa-exchange-alt mr-2"></i> Money Transfer
+          </a>
+          <a href="/payment-hub" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-store mr-2"></i> Payment Hub
+          </a>
+
+          <a href="/statements" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-file-alt mr-2"></i> Export Statements
+          </a>
+          <a href="/banko" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-robot mr-2"></i> Banko AI Assistant
+          </a>
+          <a href="/benefits" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-gift mr-2"></i> Benefits & Rewards
+          </a>
+          <a href="/admin" class="flex items-center py-2 hover:bg-blue-50 text-red-600">
+            <i class="fas fa-cog mr-2"></i> Admin Panel
+          </a>
+          <a href="/logout" class="flex items-center py-2 hover:bg-blue-50 text-gray-500">
+            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="main-content w-full bg-white shadow-lg min-h-screen">
+      <div class="p-6">
+        <!-- Header with User Info -->
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-800">Money Transfer</h1>
+            <p class="text-gray-600 mt-1">Transfer funds between accounts securely</p>
+          </div>
+          
+          <!-- User Avatar Dropdown -->
+          <div class="user-dropdown">
+            <div class="avatar-container flex flex-col items-center" onclick="toggleDropdown()">
+              <img src="/static/profilepic.jpeg" alt="Profile" class="w-12 h-12 rounded-full object-cover border-2 border-blue-200 hover:border-blue-400">
+              <span class="text-xs text-gray-600 mt-1 font-medium">
+                {% if user %}{{ user.first_name }}{% else %}Guest{% endif %}
+              </span>
+              {% if user and user.is_admin %}
+                <span class="text-xs text-red-500 font-bold">ADMIN</span>
+              {% endif %}
+            </div>
+            <div class="dropdown-content" id="userDropdown">
+              <div class="px-4 py-3 border-b border-gray-200">
+                <p class="text-sm font-semibold text-gray-900">
+                  {% if user %}{{ user.full_name }}{% else %}Guest User{% endif %}
+                </p>
+                <p class="text-sm text-gray-500">
+                  {% if user %}{{ user.email }}{% else %}guest@example.com{% endif %}
+                </p>
+                {% if user %}
+                  <p class="text-xs text-blue-600">ID: {{ user.user_id }}</p>
+                {% endif %}
+              </div>
+              <a href="/home" class="dropdown-item">
+                <i class="fas fa-home"></i> Dashboard
+              </a>
+              <a href="/profile" class="dropdown-item">
+                <i class="fas fa-user"></i> View Profile
+              </a>
+              {% if user and user.is_admin %}
+                <a href="/admin" class="dropdown-item text-purple-600">
+                  <i class="fas fa-shield-alt"></i> Admin Panel
+                </a>
+              {% endif %}
+              <div class="border-t border-gray-200"></div>
+              <a href="/logout" class="dropdown-item text-red-600">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transfer Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Transfer Form -->
+          <div class="lg:col-span-2">
+
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+              <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-exchange-alt text-blue-500 mr-2"></i>Transfer Funds
+              </h2>
+
+              <form method="POST" class="space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-gray-700 mb-1" for="from_account">From Account</label>
+                    <input name="from_account" id="from_account" 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                           placeholder="123456789" required>
+                    <p class="text-xs text-gray-500 mt-1">Try: 123456789, 987654321, 555666777</p>
+                  </div>
+                  <div>
+                    <label class="block text-gray-700 mb-1" for="to_account">To Account</label>
+                    <input name="to_account" id="to_account" 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                           placeholder="987654321" required>
+                    <p class="text-xs text-gray-500 mt-1">Destination account number</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-gray-700 mb-1" for="amount">Amount ($)</label>
+                  <input name="amount" id="amount" type="number" step="0.01"
+                         class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                         placeholder="100.00" required>
+                </div>
+
+                <div>
+                  <label class="block text-gray-700 mb-1" for="description">Description (Optional)</label>
+                  <input name="description" id="description" type="text"
+                         class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                         placeholder="Payment for services, Loan repayment, etc.">
+                  <p class="text-xs text-gray-500 mt-1">Add a note for this transfer</p>
+                </div>
+
+                {% if error %}
+                  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>{{ error }}
+                  </div>
+                {% endif %}
+                
+                {% if success %}
+                  <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                    <i class="fas fa-check-circle mr-2"></i>{{ success }}
+                  </div>
+                {% endif %}
+
+                <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300 font-semibold">
+                  <i class="fas fa-paper-plane mr-2"></i>Transfer Money
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Transfer Info Sidebar -->
+          <div class="lg:col-span-1">
+            <!-- Test Accounts -->
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+              <h3 class="font-semibold text-gray-800 mb-4">
+                <i class="fas fa-university mr-2"></i>Test Accounts
+              </h3>
+              <div class="space-y-3 text-sm">
+                <div class="bg-gray-50 p-3 rounded">
+                  <p class="font-medium">John Doe</p>
+                  <p class="text-gray-600">Account: 123456789</p>
+                  <p class="text-green-600">Balance: $5,000</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded">
+                  <p class="font-medium">Jane Smith</p>
+                  <p class="text-gray-600">Account: 987654321</p>
+                  <p class="text-green-600">Balance: $3,500</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded">
+                  <p class="font-medium">Admin User</p>
+                  <p class="text-gray-600">Account: 555666777</p>
+                  <p class="text-green-600">Balance: $10,000</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+              <h3 class="font-semibold text-gray-800 mb-4">
+                <i class="fas fa-bolt mr-2"></i>Quick Actions
+              </h3>
+              <div class="space-y-2">
+                <button onclick="fillForm('123456789', '987654321', '100')" class="w-full text-left text-blue-500 hover:bg-blue-50 p-2 rounded">
+                  <i class="fas fa-play mr-2"></i>Transfer $100: John → Jane
+                </button>
+                <button onclick="fillForm('987654321', '555666777', '-50')" class="w-full text-left text-red-500 hover:bg-red-50 p-2 rounded">
+                  <i class="fas fa-bug mr-2"></i>Exploit: Negative Amount
+                </button>
+                <button onclick="fillForm(`' OR '1'='1`, '987654321', '100')" class="w-full text-left text-purple-500 hover:bg-purple-50 p-2 rounded">
+                  <i class="fas fa-code mr-2"></i>SQL Injection Test
+                </button>
+                <a href="/home" class="block text-gray-500 hover:underline p-2">
+                  <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                </a>
+              </div>
+            </div>
+
+            <!-- Educational Notes -->
+            <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+              <h3 class="font-semibold text-yellow-800 mb-2">📚 Educational Notes:</h3>
+              <ul class="text-sm text-yellow-700 space-y-1">
+                <li><strong>SQL Injection:</strong> Direct string concatenation in queries</li>
+                <li><strong>Authorization Bypass:</strong> No check if user owns source account</li>
+                <li><strong>Business Logic:</strong> Negative amounts create money</li>
+                <li><strong>CSRF:</strong> No token validation for state-changing operations</li>
+                <li><strong>Input Validation:</strong> Insufficient server-side checks</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Sidebar toggle functionality
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const mainContent = document.getElementById('mainContent');
+      const toggleIcon = document.getElementById('toggleIcon');
+      
+      sidebar.classList.toggle('hidden');
+      mainContent.classList.toggle('expanded');
+      
+      // Change icon based on sidebar state
+      if (sidebar.classList.contains('hidden')) {
+        toggleIcon.className = 'fas fa-bars';
+      } else {
+        toggleIcon.className = 'fas fa-times';
+      }
+    }
+
+    // User dropdown functionality
+    function toggleDropdown() {
+      const dropdown = document.getElementById('userDropdown');
+      dropdown.classList.toggle('show');
+    }
+
+    // Close dropdown when clicking outside
+    window.onclick = function(event) {
+      if (!event.target.matches('.avatar-container') && !event.target.closest('.avatar-container')) {
+        const dropdowns = document.getElementsByClassName('dropdown-content');
+        for (let i = 0; i < dropdowns.length; i++) {
+          const openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+          }
+        }
+      }
+    }
+
+    // Quick action form filling
+    function fillForm(fromAccount, toAccount, amount) {
+      document.getElementById('from_account').value = fromAccount;
+      document.getElementById('to_account').value = toAccount;
+      document.getElementById('amount').value = amount;
+    }
+  </script>
+</body>
+</html> 

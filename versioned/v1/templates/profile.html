@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Profile Management - Vulnerable Banking App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    .vulnerability-warning {
+      background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+    
+    /* Sidebar Toggle Styles */
+    .sidebar {
+      transition: transform 0.3s ease-in-out;
+      transform: translateX(0);
+    }
+    
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+    
+    .main-content {
+      transition: margin-left 0.3s ease-in-out;
+      margin-left: 25%; /* 1/4 width when sidebar visible */
+    }
+    
+    .main-content.expanded {
+      margin-left: 60px; /* Leave space for toggle button when sidebar hidden */
+    }
+    
+    .toggle-btn {
+      transition: all 0.3s ease;
+      z-index: 1000;
+      width: 40px;
+      height: 40px;
+    }
+    
+    /* User Avatar Dropdown Styles */
+    .user-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      right: 0;
+      background-color: white;
+      min-width: 200px;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      border-radius: 8px;
+      z-index: 1000;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .dropdown-content.show {
+      display: block;
+    }
+    
+    .dropdown-item {
+      color: #374151;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      transition: background-color 0.2s;
+    }
+    
+    .dropdown-item:hover {
+      background-color: #f3f4f6;
+    }
+    
+    .dropdown-item i {
+      margin-right: 8px;
+      width: 16px;
+    }
+    
+    .avatar-container {
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    
+    .avatar-container:hover {
+      transform: scale(1.05);
+    }
+
+    /* Profile Section Styles */
+    .section-tab {
+      transition: all 0.3s ease;
+    }
+    
+    .section-tab.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white !important;
+      border-color: #667eea !important;
+      transform: translateY(-2px);
+    }
+    
+    .section-content {
+      display: none;
+    }
+    
+    .section-content.active {
+      display: block;
+    }
+
+    /* Profile completion bar */
+    .progress-bar {
+      transition: width 0.5s ease-in-out;
+    }
+
+    /* Form field groups */
+    .field-group {
+      border-left: 4px solid #3b82f6;
+      padding-left: 1rem;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans">
+  
+
+  <div class="min-h-screen flex relative">
+    <!-- Sidebar Toggle Button -->
+    <button onclick="toggleSidebar()" class="toggle-btn fixed top-4 left-4 z-50 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-lg">
+      <i id="toggleIcon" class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar w-1/4 bg-white p-4 space-y-4 shadow-lg fixed h-full overflow-y-auto">
+      <div class="mt-12">
+        <h3 class="text-lg font-semibold text-gray-700">VABA</h3>
+        
+        <nav class="text-gray-600 mt-4">
+          <a href="{{ request.script_root }}/home" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-home mr-2"></i> Home
+          </a>
+          <a href="{{ request.script_root }}/profile" class="flex items-center py-2 hover:bg-blue-50 bg-blue-100 text-blue-700">
+            <i class="fas fa-user mr-2"></i> Profile Management
+          </a>
+          <a href="{{ request.script_root }}/transfer" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-exchange-alt mr-2"></i> Money Transfer
+          </a>
+          <a href="{{ request.script_root }}/payment-hub" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-store mr-2"></i> Payment Hub
+          </a>
+
+          <a href="{{ request.script_root }}/statements" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-file-alt mr-2"></i> Export Statements
+          </a>
+          <a href="{{ request.script_root }}/banko" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-robot mr-2"></i> Banko AI Assistant
+          </a>
+          <a href="{{ request.script_root }}/benefits" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-gift mr-2"></i> Benefits & Rewards
+          </a>
+          <a href="{{ request.script_root }}/admin" class="flex items-center py-2 hover:bg-blue-50 text-red-600">
+            <i class="fas fa-cog mr-2"></i> Admin Panel
+          </a>
+          <a href="{{ request.script_root }}/logout" class="flex items-center py-2 hover:bg-blue-50 text-gray-500">
+            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="main-content w-full bg-gray-50 min-h-screen">
+      <div class="p-6">
+        <!-- Header with User Info -->
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-800">Comprehensive Profile Management</h1>
+            <p class="text-gray-600 mt-1">Manage your complete banking profile information</p>
+          </div>
+          
+          <!-- User Avatar Dropdown -->
+          <div class="user-dropdown">
+            <div class="avatar-container flex flex-col items-center" onclick="toggleDropdown()">
+              <img src="{{ request.script_root }}/static/profilepic.jpeg" alt="Profile" class="w-12 h-12 rounded-full object-cover border-2 border-blue-200 hover:border-blue-400">
+              <span class="text-xs text-gray-600 mt-1 font-medium">
+                {% if user %}{{ user.first_name }}{% else %}Guest{% endif %}
+              </span>
+              {% if user and user.is_admin %}
+                <span class="text-xs text-red-500 font-bold">ADMIN</span>
+              {% endif %}
+            </div>
+            <div class="dropdown-content" id="userDropdown">
+              <div class="px-4 py-3 border-b border-gray-200">
+                <p class="text-sm font-semibold text-gray-900">
+                  {% if user %}{{ user.full_name }}{% else %}Guest User{% endif %}
+                </p>
+                <p class="text-sm text-gray-500">
+                  {% if user %}{{ user.email }}{% else %}guest@example.com{% endif %}
+                </p>
+                {% if user %}
+                  <p class="text-xs text-blue-600">ID: {{ user.user_id }}</p>
+                {% endif %}
+              </div>
+              <a href="{{ request.script_root }}/home" class="dropdown-item">
+                <i class="fas fa-home"></i> Dashboard
+              </a>
+              <a href="{{ request.script_root }}/profile" class="dropdown-item">
+                <i class="fas fa-user"></i> View Profile
+              </a>
+              {% if user and user.is_admin %}
+                <a href="{{ request.script_root }}/admin" class="dropdown-item text-purple-600">
+                  <i class="fas fa-shield-alt"></i> Admin Panel
+                </a>
+              {% endif %}
+              <div class="border-t border-gray-200"></div>
+              <a href="{{ request.script_root }}/logout" class="dropdown-item text-red-600">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile Completion Progress -->
+        {% if user_info|length > 12 and user_info[12] %}
+        <div class="bg-white p-4 rounded-lg shadow mb-6">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-medium text-gray-700">Profile Completion</span>
+            <span class="text-sm text-gray-500">{{ user_info[12] }}%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="progress-bar bg-blue-500 h-2 rounded-full" {% if user_info[12] %}style="width: {{ user_info[12] }}%"{% endif %}></div>
+          </div>
+        </div>
+        {% endif %}
+
+
+        <!-- Section Tabs -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div class="flex bg-gray-50 overflow-x-auto">
+            <button type="button" onclick="showSection('personal', this); return false;" class="section-tab flex-shrink-0 px-6 py-3 text-sm font-medium text-gray-600 hover:text-blue-600 border-b-2 border-transparent active">
+              <i class="fas fa-user mr-2"></i>Personal Info
+            </button>
+            <button type="button" onclick="showSection('security', this); return false;" class="section-tab flex-shrink-0 px-6 py-3 text-sm font-medium text-gray-600 hover:text-blue-600 border-b-2 border-transparent">
+              <i class="fas fa-shield-alt mr-2"></i>Security
+            </button>
+            <button type="button" onclick="showSection('kyc', this); return false;" class="section-tab flex-shrink-0 px-6 py-3 text-sm font-medium text-gray-600 hover:text-blue-600 border-b-2 border-transparent">
+              <i class="fas fa-id-card mr-2"></i>KYC Verification
+            </button>
+            <button type="button" onclick="showSection('preferences', this); return false;" class="section-tab flex-shrink-0 px-6 py-3 text-sm font-medium text-gray-600 hover:text-blue-600 border-b-2 border-transparent">
+              <i class="fas fa-cog mr-2"></i>Preferences
+            </button>
+          </div>
+
+          <!-- Profile Form -->
+          <form method="POST" class="p-6">
+            <!-- Personal Information Section -->
+            <div id="personal-section" class="section-content active">
+              <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-user text-blue-500 mr-2"></i>Personal Information
+              </h3>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="field-group">
+                  <h4 class="font-medium text-gray-700 mb-3">Basic Details</h4>
+                  <div class="space-y-4">
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="first_name">First Name *</label>
+                      <input name="first_name" id="first_name" 
+                             value="{{ user_info[0] if user_info[0] else '' }}"
+                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                             placeholder="John" required>
+                    </div>
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="last_name">Last Name *</label>
+                      <input name="last_name" id="last_name" 
+                             value="{{ user_info[1] if user_info[1] else '' }}"
+                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                             placeholder="Doe" required>
+                    </div>
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="email">Email Address *</label>
+                      <input name="email" id="email" type="email" 
+                             value="{{ user_info[2] if user_info[2] else '' }}"
+                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                             placeholder="john@example.com" required>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <h4 class="font-medium text-gray-700 mb-3">Personal Details</h4>
+                  <div class="space-y-4">
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="date_of_birth">Date of Birth</label>
+                      <input name="date_of_birth" id="date_of_birth" type="date"
+                             value="{{ user_info[5] if user_info[5] else '' }}"
+                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    </div>
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="gender">Gender</label>
+                      <select name="gender" id="gender" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="">Select Gender</option>
+                        <option value="Male" {{ 'selected' if user_info[6] == 'Male' else '' }}>Male</option>
+                        <option value="Female" {{ 'selected' if user_info[6] == 'Female' else '' }}>Female</option>
+                        <option value="Other" {{ 'selected' if user_info[6] == 'Other' else '' }}>Other</option>
+                        <option value="Prefer not to say" {{ 'selected' if user_info[6] == 'Prefer not to say' else '' }}>Prefer not to say</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="phone">Phone Number</label>
+                      <input name="phone" id="phone" type="tel"
+                             value="{{ user_info[4] if user_info[4] else '' }}"
+                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                             placeholder="555-123-4567">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+                             <div class="mt-6">
+                 <label class="block text-gray-700 mb-1" for="bio">Address</label>
+                 <textarea name="bio" id="bio" rows="4"
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                           placeholder="Enter your full address...">{{ user_info[3] if user_info[3] else '' }}</textarea>
+                 
+                 <div class="mt-2">
+                   <button type="button" onclick="submitBioForm()" class="bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700">Update Address</button>
+                 </div>
+               </div>
+            </div>
+
+
+
+            <!-- Security Section -->
+            <div id="security-section" class="section-content">
+              <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-shield-alt text-blue-500 mr-2"></i>Password & Security Settings
+              </h3>
+              
+              <div class="bg-red-50 border border-red-200 p-4 rounded-lg mb-6">
+                <div class="flex items-center">
+                  <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                  <span class="text-red-800 text-sm font-medium">Vulnerability Demo: No password verification required to change password!</span>
+                </div>
+              </div>
+
+              <!-- Password Change Form -->
+              <div class="bg-white p-6 rounded-lg border mb-6">
+                <h4 class="font-semibold text-gray-800 mb-4">
+                  <i class="fas fa-key text-blue-500 mr-2"></i>Change Password & PIN
+                </h4>
+                <div class="space-y-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="current_password">Current Password</label>
+                      <input name="current_password" id="current_password" type="password" form="passwordForm"
+                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                             placeholder="Enter current password">
+                      <p class="text-xs text-red-500 mt-1">⚠️ Not actually verified in backend!</p>
+                    </div>
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="new_password">New Password</label>
+                      <input name="new_password" id="new_password" type="password" form="passwordForm"
+                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                             placeholder="Enter new password">
+                      <p class="text-xs text-yellow-600 mt-1">Min 3 characters (weak requirement)</p>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-1 md-grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="confirm_password">Confirm New Password</label>
+                      <input name="confirm_password" id="confirm_password" type="password" form="passwordForm"
+                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                             placeholder="Confirm new password">
+                    </div>
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="pin">4-digit Transfer PIN</label>
+                      <input name="pin" id="pin" maxlength="4"
+                             value="{{ user.pin if user and user.pin else '' }}"
+                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                             placeholder="1234">
+                      <p class="text-xs text-gray-500 mt-1">Used to confirm transfers in chat (digits only).</p>
+                      <div class="mt-2">
+                        <button type="button" onclick="submitPinForm()" class="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700">
+                          Update PIN
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex items-end">
+                      <button type="button" onclick="submitPasswordForm()" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-save mr-2"></i>Change Password
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Security Questions Section -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="field-group">
+                  <h4 class="font-medium text-gray-700 mb-3">
+                    <i class="fas fa-question-circle text-blue-500 mr-2"></i>Security Questions
+                  </h4>
+                  <div class="space-y-4">
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="security_question">Security Question</label>
+                      <select name="security_question" id="security_question" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="">Select a security question</option>
+                        <option value="What is your mother's maiden name?" {{ 'selected' if user_info[10] == "What is your mother's maiden name?" else '' }}>What is your mother's maiden name?</option>
+                        <option value="What was your first pet's name?" {{ 'selected' if user_info[10] == "What was your first pet's name?" else '' }}>What was your first pet's name?</option>
+                        <option value="What is your favorite color?" {{ 'selected' if user_info[10] == "What is your favorite color?" else '' }}>What is your favorite color?</option>
+                        <option value="What city were you born in?" {{ 'selected' if user_info[10] == "What city were you born in?" else '' }}>What city were you born in?</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="security_answer">Security Answer</label>
+                      <input name="security_answer" id="security_answer"
+                             value="{{ user_info[11] if user_info[11] else '' }}"
+                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                             placeholder="Your answer here">
+                      
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <h4 class="font-medium text-gray-700 mb-3">
+                    <i class="fas fa-shield-alt text-blue-500 mr-2"></i>Security Settings
+                  </h4>
+                  <div class="space-y-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                      <h5 class="font-medium text-gray-700 mb-2">Two-Factor Authentication</h5>
+                      <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Status: Disabled</span>
+                        <button type="button" class="bg-gray-400 text-white px-3 py-1 rounded text-sm cursor-not-allowed" disabled>
+                          Enable (Demo Only)
+                        </button>
+                      </div>
+                      <p class="text-xs text-red-500 mt-2">⚠️ No actual 2FA implementation</p>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                      <h5 class="font-medium text-gray-700 mb-2">Session Management</h5>
+                      <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                          <span class="text-sm text-gray-600">Active Sessions</span>
+                          <span class="text-sm font-medium">1 (Current)</span>
+                        </div>
+                        <button type="button" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600" onclick="alert('Feature disabled in demo')">
+                          Logout All Sessions
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                      <h5 class="font-medium text-gray-700 mb-2">Login Alerts</h5>
+                      <label class="flex items-center">
+                        <input type="checkbox" class="mr-2 text-blue-500" disabled>
+                        <span class="text-sm text-gray-600">Email me on new login</span>
+                      </label>
+                      <p class="text-xs text-red-500 mt-1">⚠️ Feature not implemented</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Security Vulnerability Examples -->
+              <div class="mt-6 bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                <h5 class="font-medium text-yellow-800 mb-2">
+                  <i class="fas fa-bug text-yellow-600 mr-2"></i>Security Vulnerabilities Demo
+                </h5>
+                <ul class="text-sm text-yellow-700 space-y-1">
+                  <li>• No current password verification required</li>
+                  <li>• Weak password requirements (minimum 3 characters)</li>
+                  <li>• Security answers stored in plain text</li>
+                  <li>• XSS injection possible in security answer field</li>
+                  <li>• No rate limiting on password changes</li>
+                  <li>• No password strength validation</li>
+                  <li>• No account lockout after failed attempts</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- KYC Verification Section -->
+            <div id="kyc-section" class="section-content">
+              <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-id-card text-blue-500 mr-2"></i>KYC (Know Your Customer) Verification
+              </h3>
+              
+              <!-- Current KYC Status -->
+              <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg mb-6">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="font-medium text-gray-800">Current Verification Status</h4>
+                    {% set kyc_status = user_info[15] if user_info[15] else 'pending' %}
+                    {% if kyc_status == 'verified' %}
+                      <span class="inline-flex items-center px-3 py-1 text-sm font-medium text-green-800 bg-green-100 rounded-full mt-2">
+                        <i class="fas fa-check-circle mr-1"></i>Verified
+                      </span>
+                    {% elif kyc_status == 'submitted' %}
+                      <span class="inline-flex items-center px-3 py-1 text-sm font-medium text-yellow-800 bg-yellow-100 rounded-full mt-2">
+                        <i class="fas fa-clock mr-1"></i>Under Review
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center px-3 py-1 text-sm font-medium text-red-800 bg-red-100 rounded-full mt-2">
+                        <i class="fas fa-exclamation-circle mr-1"></i>Pending Verification
+                      </span>
+                    {% endif %}
+                  </div>
+                  <div class="text-right text-sm text-gray-600">
+                    {% if user_info[16] %}
+                      <p>Submitted: {{ user_info[16][:10] }}</p>
+                    {% endif %}
+                    {% if user_info[17] %}
+                      <p>Verified: {{ user_info[17][:10] }}</p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Document Upload Section -->
+              {% if kyc_status != 'verified' %}
+              <div class="bg-white border border-gray-200 p-6 rounded-lg mb-6">
+                <h4 class="font-medium text-gray-800 mb-4">
+                  <i class="fas fa-upload text-blue-500 mr-2"></i>Upload Verification Documents
+                </h4>
+                
+                <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-4">
+                  <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-500 mt-1 mr-2"></i>
+                    <div class="text-blue-800 text-sm">
+                      <p class="font-medium mb-1">Required Documents for Address Confirmation:</p>
+                      <ul class="list-disc list-inside space-y-1">
+                        <li>Utility Bill (electricity, water, gas) - not older than 3 months</li>
+                        <li>Government-issued ID (driver's license, passport, national ID)</li>
+                      </ul>
+                      <p class="mt-2 font-medium">File Requirements: PDF, PNG, JPG, JPEG • Max size: 5MB</p>
+                    </div>
+                  </div>
+                </div>
+
+                <input type="hidden" name="action" value="upload_kyc" form="kycForm">
+                <div class="space-y-4">
+                  
+                  <div>
+                    <label class="block text-gray-700 mb-2" for="document_type">Document Type</label>
+                    <select name="document_type" id="document_type" form="kycForm" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" required>
+                      <option value="">Select document type</option>
+                      <option value="utility_bill">Utility Bill</option>
+                      <option value="government_id">Government-issued ID</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-gray-700 mb-2" for="kyc_document">Select Document</label>
+                    <input type="file" name="kyc_document" id="kyc_document" form="kycForm"
+                           accept=".pdf,.png,.jpg,.jpeg" 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" 
+                           required>
+                    <p class="text-xs text-gray-500 mt-1">Supported formats: PDF, PNG, JPG, JPEG (Max: 5MB)</p>
+                  </div>
+                  
+                  <button type="submit" form="kycForm" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition duration-200">
+                    <i class="fas fa-upload mr-2"></i>Upload Document
+                  </button>
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Current Document Information -->
+              {% if user_info[18] and user_info[19] %}
+              <div class="bg-green-50 border border-green-200 p-4 rounded-lg">
+                <h4 class="font-medium text-green-800 mb-2">
+                  <i class="fas fa-file-alt text-green-600 mr-2"></i>Uploaded Document
+                </h4>
+                <div class="text-sm text-green-700">
+                  <p><strong>Type:</strong> {{ user_info[18].replace('_', ' ').title() }}</p>
+                  <p><strong>File:</strong> {{ user_info[19] }}</p>
+                  {% if user_info[16] %}
+                    <p><strong>Uploaded:</strong> {{ user_info[16][:16] }}</p>
+                  {% endif %}
+                  {% if user_info[20] %}
+                    <p><strong>Notes:</strong> {{ user_info[20] }}</p>
+                  {% endif %}
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Educational Notes -->
+              <div class="bg-orange-50 border border-orange-200 p-4 rounded-lg mt-6">
+                <div class="flex items-start">
+                  <i class="fas fa-graduation-cap text-orange-500 mt-1 mr-2"></i>
+                  <div class="text-orange-800 text-sm">
+                    <p class="font-medium mb-1">Educational Context - KYC Security Considerations:</p>
+                    <ul class="list-disc list-inside space-y-1">
+                      <li><strong>File Upload Vulnerabilities:</strong> No file content scanning for malicious payloads</li>
+                      <li><strong>Path Traversal Risk:</strong> Filename handling could be exploited</li>
+                      <li><strong>Storage Security:</strong> Documents stored in local filesystem without encryption</li>
+                      <li><strong>Access Control:</strong> No admin verification workflow implemented</li>
+                      <li><strong>Data Retention:</strong> No automatic deletion policy for rejected documents</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Preferences Section -->
+            <div id="preferences-section" class="section-content">
+              <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-cog text-blue-500 mr-2"></i>Account Preferences & Settings
+              </h3>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="field-group">
+                  <h4 class="font-medium text-gray-700 mb-3">Language & Region</h4>
+                  <div class="space-y-4">
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="preferred_language">Preferred Language</label>
+                      <select name="preferred_language" id="preferred_language" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="English" {{ 'selected' if user_info[7] == 'English' else '' }}>English</option>
+                        <option value="Spanish" {{ 'selected' if user_info[7] == 'Spanish' else '' }}>Spanish</option>
+                        <option value="French" {{ 'selected' if user_info[7] == 'French' else '' }}>French</option>
+                        <option value="German" {{ 'selected' if user_info[7] == 'German' else '' }}>German</option>
+                        <option value="Chinese" {{ 'selected' if user_info[7] == 'Chinese' else '' }}>Chinese</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="time_zone">Time Zone</label>
+                      <select name="time_zone" id="time_zone" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="America/New_York" {{ 'selected' if user_info[8] == 'America/New_York' else '' }}>Eastern Time (US & Canada)</option>
+                        <option value="America/Chicago" {{ 'selected' if user_info[8] == 'America/Chicago' else '' }}>Central Time (US & Canada)</option>
+                        <option value="America/Denver" {{ 'selected' if user_info[8] == 'America/Denver' else '' }}>Mountain Time (US & Canada)</option>
+                        <option value="America/Los_Angeles" {{ 'selected' if user_info[8] == 'America/Los_Angeles' else '' }}>Pacific Time (US & Canada)</option>
+                        <option value="UTC" {{ 'selected' if user_info[8] == 'UTC' else '' }}>UTC</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-gray-700 mb-1" for="currency_preference">Currency Preference</label>
+                      <select name="currency_preference" id="currency_preference" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <option value="USD">USD - US Dollar</option>
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="GBP">GBP - British Pound</option>
+                        <option value="CAD">CAD - Canadian Dollar</option>
+                        <option value="AUD">AUD - Australian Dollar</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <h4 class="font-medium text-gray-700 mb-3">Notifications & Communications</h4>
+                  <div class="space-y-4">
+                    <div>
+                      <label class="block text-gray-700 mb-2">Notification Preferences</label>
+                      {% set notification_prefs = user_info[9].split(',') if user_info[9] else [] %}
+                      <div class="space-y-2">
+                        <label class="flex items-center">
+                          <input type="checkbox" name="notification_preferences" value="email" 
+                                 {{ 'checked' if 'email' in notification_prefs else '' }}
+                                 class="mr-2 text-blue-500">
+                          <span class="text-gray-700">Email notifications</span>
+                        </label>
+                        <label class="flex items-center">
+                          <input type="checkbox" name="notification_preferences" value="telegram" 
+                                 {{ 'checked' if 'telegram' in notification_prefs else '' }}
+                                 class="mr-2 text-blue-500">
+                          <span class="text-gray-700">Telegram notifications</span>
+                        </label>
+                        <label class="flex items-center">
+                          <input type="checkbox" name="notification_preferences" value="push" 
+                                 {{ 'checked' if 'push' in notification_prefs else '' }}
+                                 class="mr-2 text-blue-500">
+                          <span class="text-gray-700">Push notifications</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-6 pt-6 border-t">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="field-group">
+                    <h4 class="font-medium text-gray-700 mb-3">Privacy & Security</h4>
+                    <div class="space-y-3">
+                      <label class="flex items-center">
+                        <input type="checkbox" name="two_factor_enabled" class="mr-2 text-blue-500">
+                        <span class="text-gray-700">Enable Two-Factor Authentication</span>
+                      </label>
+                      <label class="flex items-center">
+                        <input type="checkbox" name="login_alerts" class="mr-2 text-blue-500">
+                        <span class="text-gray-700">Login alerts</span>
+                      </label>
+                      <p class="text-xs text-red-500 mt-2">⚠️ No actual security implementation - demo only!</p>
+                    </div>
+                  </div>
+
+
+                </div>
+              </div>
+            </div>
+
+
+
+            <!-- Hidden field for IDOR vulnerability -->
+            <input type="hidden" name="target_user_id" value="{{ view_user_id }}">
+            
+            <!-- Status Messages -->
+            {% if error %}
+              <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mt-6">
+                <i class="fas fa-exclamation-circle mr-2"></i>{{ error }}
+              </div>
+            {% endif %}
+            
+            {% if success %}
+              <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mt-6">
+                <i class="fas fa-check-circle mr-2"></i>{{ success }}
+              </div>
+            {% endif %}
+
+            <!-- Submit Button -->
+            <div class="mt-8 pt-6 border-t">
+              <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg hover:from-blue-600 hover:to-purple-700 transition duration-300 font-semibold text-lg">
+                <i class="fas fa-save mr-2"></i>Update Complete Profile
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Profile Analytics Sidebar -->
+        <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Account Balance Information -->
+          {% if account_balance_data or total_profile_balance is defined %}
+          <div class="bg-white p-6 rounded-lg shadow-lg border-l-4 border-green-400">
+            <h3 class="font-semibold text-gray-800 mb-3">
+              <i class="fas fa-wallet mr-2 text-green-600"></i>Account Balance
+            </h3>
+            <div class="space-y-3">
+              <div class="text-center">
+                <p class="text-2xl font-bold text-green-600">${{ "%.2f"|format(total_profile_balance if total_profile_balance else 0) }}</p>
+                <p class="text-sm text-gray-500">Total Balance</p>
+              </div>
+              {% if account_balance_data %}
+                <div class="border-t pt-3">
+                  <p class="text-xs text-gray-600 mb-2">Account Details:</p>
+                  {% for account in account_balance_data %}
+                    <div class="flex justify-between items-center text-sm py-1">
+                      <span class="text-gray-600">{{ account[1]|title }} (***{{ account[0][-4:] }})</span>
+                      <span class="font-medium">${{ "%.2f"|format(account[2]) }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+          
+          <!-- Profile Statistics -->
+          {% if user_info|length > 13 and (user_info[13] or user_info[14]) %}
+          <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h3 class="font-semibold text-gray-800 mb-3">
+              <i class="fas fa-chart-bar mr-2 text-blue-600"></i>Profile Statistics
+            </h3>
+            <div class="space-y-2">
+              {% if user_info[13] %}
+              <div class="flex justify-between">
+                <span class="text-gray-600">Last Login:</span>
+                <span class="text-sm font-medium">{{ user_info[13]|string|truncate(10) }}</span>
+              </div>
+              {% endif %}
+              {% if user_info[14] %}
+              <div class="flex justify-between">
+                <span class="text-gray-600">Login Count:</span>
+                <span class="text-sm font-medium">{{ user_info[14] }} times</span>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+                     
+          <!-- Current Address Display -->
+           {% if user_info[3] %}
+           <div class="bg-white p-6 rounded-lg shadow-lg">
+             <h3 class="font-semibold text-gray-800 mb-2">Current Address:</h3>
+             <div class="text-gray-700 p-3 bg-gray-50 rounded">{{ user_info[3]|safe }}</div>
+           </div>
+           {% endif %}
+
+          <!-- Quick IDOR Testing Links -->
+          <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h3 class="font-semibold text-gray-800 mb-4">IDOR Testing</h3>
+            <div class="space-y-2">
+              <a href="{{ request.script_root }}/profile?user_id=1" class="block text-blue-500 hover:underline">
+                <i class="fas fa-eye mr-2"></i>View User 1 (johndoe)
+              </a>
+              <a href="{{ request.script_root }}/profile?user_id=2" class="block text-blue-500 hover:underline">
+                <i class="fas fa-eye mr-2"></i>View User 2 (janesmith)
+              </a>
+              <a href="{{ request.script_root }}/profile?user_id=10" class="block text-blue-500 hover:underline text-red-600">
+                <i class="fas fa-crown mr-2"></i>View User 10 (admin)
+              </a>
+              <a href="{{ request.script_root }}/profile?user_id=20" class="block text-blue-500 hover:underline text-purple-600">
+                <i class="fas fa-star mr-2"></i>View User 20 (superadmin)
+              </a>
+            </div>
+          </div>
+
+          <!-- Profile Stats -->
+          {% if user_info|length > 12 %}
+          <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h3 class="font-semibold text-gray-800 mb-4">Profile Statistics</h3>
+            <div class="space-y-3">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Last Login:</span>
+                <span class="text-gray-800">{{ user_info[13]|string|truncate(10) if user_info[13] else 'Never' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Login Count:</span>
+                <span class="text-gray-800">{{ user_info[14] if user_info[14] else '0' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Profile Complete:</span>
+                <span class="text-green-600 font-semibold">{{ user_info[12] if user_info[12] else '30' }}%</span>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Separate Password Change Form -->
+  <form id="passwordForm" method="POST" style="display: none;">
+    <input type="hidden" name="action" value="change_password">
+    <input type="hidden" name="target_user_id" value="{{ view_user_id }}">
+  </form>
+  <form id="pinForm" method="POST" style="display:none;">
+    <input type="hidden" name="action" value="update_pin">
+    <input type="hidden" name="pin" id="pin_hidden">
+  </form>
+  <form id="bioForm" method="POST" style="display:none;">
+    <input type="hidden" name="action" value="update_bio">
+    <input type="hidden" name="bio" id="bio_hidden">
+  </form>
+
+  <script>
+    // Sidebar toggle functionality
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const mainContent = document.getElementById('mainContent');
+      const toggleIcon = document.getElementById('toggleIcon');
+      
+      sidebar.classList.toggle('hidden');
+      mainContent.classList.toggle('expanded');
+      
+      // Change icon based on sidebar state
+      if (sidebar.classList.contains('hidden')) {
+        toggleIcon.className = 'fas fa-bars';
+      } else {
+        toggleIcon.className = 'fas fa-times';
+      }
+    }
+
+    // User dropdown functionality
+    function toggleDropdown() {
+      const dropdown = document.getElementById('userDropdown');
+      dropdown.classList.toggle('show');
+    }
+
+    // Section tab functionality
+    function showSection(sectionName, clickedElement) {
+      try {
+        console.log('showSection called with:', sectionName, clickedElement);
+        
+        // Hide all sections
+        const sections = document.querySelectorAll('.section-content');
+        sections.forEach(function(section) {
+          section.classList.remove('active');
+          section.style.display = 'none';
+        });
+        
+        // Remove active class from all tabs
+        const tabs = document.querySelectorAll('.section-tab');
+        tabs.forEach(function(tab) {
+          tab.classList.remove('active');
+        });
+        
+        // Show selected section
+        const targetSection = document.getElementById(sectionName + '-section');
+        if (targetSection) {
+          targetSection.classList.add('active');
+          targetSection.style.display = 'block';
+          console.log('Section shown:', targetSection);
+        } else {
+          console.error('Section not found:', sectionName + '-section');
+        }
+        
+        // Add active class to clicked tab
+        if (clickedElement) {
+          clickedElement.classList.add('active');
+          console.log('Tab activated:', clickedElement);
+        }
+        
+        return false;
+      } catch (error) {
+        console.error('Error in showSection:', error);
+        return false;
+      }
+    }
+
+    // Close dropdown when clicking outside
+    window.onclick = function(event) {
+      if (!event.target.matches('.avatar-container') && !event.target.closest('.avatar-container')) {
+        const dropdowns = document.getElementsByClassName('dropdown-content');
+        for (let i = 0; i < dropdowns.length; i++) {
+          const openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+          }
+        }
+      }
+    }
+
+    // Password form submission
+    function submitPasswordForm() {
+      document.getElementById('passwordForm').submit();
+    }
+
+    function submitPinForm() {
+      try {
+        const pin = document.getElementById('pin').value || '';
+        document.getElementById('pin_hidden').value = pin;
+        document.getElementById('pinForm').submit();
+      } catch (e) {
+        alert('Failed to submit PIN update.');
+      }
+    }
+
+    function submitBioForm() {
+      try {
+        const bio = document.getElementById('bio').value || '';
+        document.getElementById('bio_hidden').value = bio;
+        document.getElementById('bioForm').submit();
+      } catch (e) {
+        alert('Failed to submit Address update.');
+      }
+    }
+
+
+  </script>
+</body>
+</html> 

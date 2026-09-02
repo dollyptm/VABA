@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Export Statements - Vulnerable Banking App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    .vulnerability-warning {
+      background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+    
+    /* Sidebar Toggle Styles */
+    .sidebar {
+      transition: transform 0.3s ease-in-out;
+      transform: translateX(0);
+    }
+    
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+    
+    .main-content {
+      transition: margin-left 0.3s ease-in-out;
+      margin-left: 25%; /* 1/4 width when sidebar visible */
+    }
+    
+    .main-content.expanded {
+      margin-left: 60px; /* Leave space for toggle button when sidebar hidden */
+    }
+    
+    .toggle-btn {
+      transition: all 0.3s ease;
+      z-index: 1000;
+      width: 40px;
+      height: 40px;
+    }
+    
+    /* User Avatar Dropdown Styles */
+    .user-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      right: 0;
+      background-color: white;
+      min-width: 200px;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      border-radius: 8px;
+      z-index: 1000;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .dropdown-content.show {
+      display: block;
+    }
+    
+    .dropdown-item {
+      color: #374151;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      transition: background-color 0.2s;
+    }
+    
+    .dropdown-item:hover {
+      background-color: #f3f4f6;
+    }
+    
+    .dropdown-item i {
+      margin-right: 8px;
+      width: 16px;
+    }
+    
+    .avatar-container {
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    
+    .avatar-container:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans">
+  <!-- Header Banner -->
+  
+
+  <div class="min-h-screen flex relative">
+    <!-- Sidebar Toggle Button -->
+    <button onclick="toggleSidebar()" class="toggle-btn fixed top-4 left-4 z-50 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-lg">
+      <i id="toggleIcon" class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar w-1/4 bg-blue p-4 space-y-4 shadow-lg fixed h-full overflow-y-auto">
+      <div class="mt-12"> <!-- Add margin to avoid overlap with toggle button -->
+        <h3 class="text-lg font-semibold text-gray-700">VABA</h3>
+        
+        <nav class="text-gray-600 mt-4">
+          <a href="{{ request.script_root }}/home" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-home mr-2"></i> Home
+          </a>
+          <a href="{{ request.script_root }}/profile" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-user mr-2"></i> Profile Management
+          </a>
+          <a href="{{ request.script_root }}/transfer" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-exchange-alt mr-2"></i> Money Transfer
+          </a>
+          <a href="{{ request.script_root }}/payment-hub" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-store mr-2"></i> Payment Hub
+          </a>
+
+          <a href="{{ request.script_root }}/statements" class="flex items-center py-2 hover:bg-blue-50 bg-blue-100 text-blue-700">
+            <i class="fas fa-file-alt mr-2"></i> Export Statements
+          </a>
+          <a href="{{ request.script_root }}/banko" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-robot mr-2"></i> Banko AI Assistant
+          </a>
+          <a href="{{ request.script_root }}/benefits" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-gift mr-2"></i> Benefits & Rewards
+          </a>
+          <a href="{{ request.script_root }}/admin" class="flex items-center py-2 hover:bg-blue-50 text-red-600">
+            <i class="fas fa-cog mr-2"></i> Admin Panel
+          </a>
+          <a href="{{ request.script_root }}/logout" class="flex items-center py-2 hover:bg-blue-50 text-gray-500">
+            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="main-content w-full bg-white shadow-lg min-h-screen">
+      <div class="p-6">
+        <!-- Header with User Info -->
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-800">Export Statements</h1>
+            <p class="text-gray-600 mt-1">Export your transaction history and statements</p>
+          </div>
+          
+          <!-- User Avatar Dropdown -->
+          <div class="user-dropdown">
+            <div class="avatar-container flex flex-col items-center" onclick="toggleDropdown()">
+              <img src="{{ request.script_root }}/static/profilepic.jpeg" alt="Profile" class="w-12 h-12 rounded-full object-cover border-2 border-blue-200 hover:border-blue-400">
+              <span class="text-xs text-gray-600 mt-1 font-medium">
+                {% if user %}{{ user.first_name }}{% else %}Guest{% endif %}
+              </span>
+              {% if user and user.is_admin %}
+                <span class="text-xs text-red-500 font-bold">ADMIN</span>
+              {% endif %}
+            </div>
+            <div class="dropdown-content" id="userDropdown">
+              <div class="px-4 py-3 border-b border-gray-200">
+                <p class="text-sm font-semibold text-gray-900">
+                  {% if user %}{{ user.full_name }}{% else %}Guest User{% endif %}
+                </p>
+                <p class="text-sm text-gray-500">
+                  {% if user %}{{ user.email }}{% else %}guest@example.com{% endif %}
+                </p>
+                {% if user %}
+                  <p class="text-xs text-blue-600">ID: {{ user.user_id }}</p>
+                {% endif %}
+              </div>
+              <a href="{{ request.script_root }}/home" class="dropdown-item">
+                <i class="fas fa-home"></i> Dashboard
+              </a>
+              <a href="{{ request.script_root }}/profile" class="dropdown-item">
+                <i class="fas fa-user"></i> View Profile
+              </a>
+              {% if user and user.is_admin %}
+                <a href="{{ request.script_root }}/admin" class="dropdown-item text-purple-600">
+                  <i class="fas fa-shield-alt"></i> Admin Panel
+                </a>
+              {% endif %}
+              <div class="border-t border-gray-200"></div>
+              <a href="{{ request.script_root }}/logout" class="dropdown-item text-red-600">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statements Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Statements Display -->
+          <div class="lg:col-span-2">
+            <!-- Account Summary -->
+            {% if account_summary %}
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+              <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-university text-green-500 mr-2"></i>Account Summary
+              </h2>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for account in account_summary %}
+                <div class="bg-gray-50 p-4 rounded-lg border">
+                  <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-semibold text-gray-800">{{ account[1]|title }} Account</h3>
+                    <span class="text-sm text-gray-500">{{ account[3]|string|truncate(10) }}</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-1">Account: {{ account[0] }}</p>
+                  <p class="text-lg font-bold {% if account[2] >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                    ${{ "%.2f"|format(account[2]) }}
+                  </p>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- Transaction History -->
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+              <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-history text-purple-500 mr-2"></i>Transaction History
+              </h2>
+              
+              <!-- Search Filters -->
+              <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label for="searchType" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select id="searchType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                      <option value="">All Types</option>
+                      <option value="purchase">Purchase</option>
+                      <option value="transfer">Transfer</option>
+                      <option value="deposit">Deposit</option>
+                      <option value="withdrawal">Withdrawal</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="searchFromDate" class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                    <input type="date" id="searchFromDate"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                  </div>
+                  <div>
+                    <label for="searchToDate" class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                    <input type="date" id="searchToDate"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label for="searchMinAmount" class="block text-sm font-medium text-gray-700 mb-1">Min Amount ($)</label>
+                    <input type="number" id="searchMinAmount" placeholder="0.00" step="0.01"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                  </div>
+                  <div>
+                    <label for="searchMaxAmount" class="block text-sm font-medium text-gray-700 mb-1">Max Amount ($)</label>
+                    <input type="number" id="searchMaxAmount" placeholder="1000.00" step="0.01"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                  </div>
+                  <div class="flex items-end">
+                    <div class="flex space-x-2 w-full">
+                      <button onclick="filterTransactions()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-200 text-sm flex-1">
+                        <i class="fas fa-search mr-2"></i>Search
+                      </button>
+                      <button onclick="clearFilters()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition duration-200 text-sm flex-1">
+                        <i class="fas fa-times mr-2"></i>Clear
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {% if transactions %}
+                <div class="overflow-x-auto">
+                  <table id="transactionsTable" class="w-full border-collapse border border-gray-300">
+                    <thead>
+                      <tr class="bg-gray-50">
+                        <th class="border border-gray-300 px-4 py-2 text-left">Date</th>
+                        <th class="border border-gray-300 px-4 py-2 text-left">Type</th>
+                        <th class="border border-gray-300 px-4 py-2 text-left">Description</th>
+                        <th class="border border-gray-300 px-4 py-2 text-right">Amount</th>
+                        <th class="border border-gray-300 px-4 py-2 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="transactionsBody">
+                      {% for transaction in transactions %}
+                      <tr class="transaction-row hover:bg-gray-50" 
+                          data-type="{{ transaction.type }}"
+                          data-amount="{{ transaction.amount|abs }}"
+                          data-date="{{ transaction.date }}">
+                        <td class="border border-gray-300 px-4 py-2 text-sm">{{ transaction.date }}</td>
+                        <td class="border border-gray-300 px-4 py-2">
+                          <span class="px-2 py-1 text-xs rounded-full font-medium
+                            {% if transaction.type == 'deposit' %}bg-green-100 text-green-800
+                            {% elif transaction.type == 'withdrawal' %}bg-red-100 text-red-800
+                            {% elif transaction.type == 'transfer' %}bg-blue-100 text-blue-800
+                            {% elif transaction.type == 'purchase' %}bg-purple-100 text-purple-800
+                            {% elif transaction.type == 'admin_adjustment' %}bg-gray-100 text-gray-800
+                            {% elif transaction.type == 'loyalty_redemption' %}bg-gray-100 text-gray-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {% if transaction.type == 'admin_adjustment' %}System Credit
+                            {% elif transaction.type == 'loyalty_redemption' %}Reward Credit
+                            {% else %}{{ transaction.type|title }}{% endif %}
+                          </span>
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2 text-sm">
+                          {{ transaction.description }}
+                          {% if transaction.from_account and transaction.to_account %}
+                            <div class="text-xs text-gray-500 mt-1">
+                              From: {{ transaction.from_account }} → To: {{ transaction.to_account }}
+                            </div>
+                          {% endif %}
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2 text-right font-semibold
+                          {% if transaction.is_income %}text-green-600{% else %}text-red-600{% endif %}">
+                          {% if transaction.is_income %}+{% endif %}${{ "%.2f"|format(transaction.amount) }}
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2 text-center">
+                          <span class="px-2 py-1 text-xs rounded-full font-medium
+                            {% if transaction.status == 'completed' %}bg-green-100 text-green-800
+                            {% elif transaction.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% elif transaction.status == 'failed' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ transaction.status|title if transaction.status else 'Completed' }}
+                          </span>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                
+                <!-- Results Info -->
+                <div class="mt-4 text-sm text-gray-600">
+                  <span id="resultsInfo">Showing {{ transactions|length }} transactions</span>
+                </div>
+              {% else %}
+              <div class="text-center py-8">
+                <div class="text-6xl text-gray-300 mb-4">
+                  <i class="fas fa-receipt"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-600 mb-2">No Transactions Found</h3>
+                <p class="text-gray-500 mb-4">You haven't made any transactions yet.</p>
+                <a href="{{ request.script_root }}/payment-hub" class="inline-block bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+                  <i class="fas fa-store mr-2"></i>Visit Payment Hub
+                </a>
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- Export Options -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+              <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-download text-blue-500 mr-2"></i>Export Options
+              </h2>
+              
+              <div class="grid grid-cols-3 gap-4">
+                <button onclick="exportCSV()" class="bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition duration-300 font-semibold">
+                  <i class="fas fa-file-csv mr-2"></i>Export CSV
+                </button>
+                <button onclick="exportHTML()" class="bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition duration-300 font-semibold">
+                  <i class="fas fa-file-code mr-2"></i>Export HTML
+                </button>
+                <button onclick="exportPDF()" class="bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 transition duration-300 font-semibold">
+                  <i class="fas fa-file-pdf mr-2"></i>Export PDF
+                </button>
+              </div>
+              
+              <div class="mt-4 bg-blue-50 border border-blue-200 p-3 rounded">
+                <p class="text-blue-800 text-sm">
+                  <i class="fas fa-info-circle mr-2"></i>
+                  <strong>Info:</strong> Export your transaction history in various formats for record keeping.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Export Info Sidebar -->
+          <div class="lg:col-span-1">
+            <!-- Export Formats -->
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+              <h3 class="font-semibold text-gray-800 mb-4">
+                <i class="fas fa-file-export mr-2"></i>Export Formats
+              </h3>
+              <div class="space-y-2">
+                <div class="flex items-center p-2 bg-green-50 rounded">
+                  <i class="fas fa-file-csv text-green-600 mr-3"></i>
+                  <div>
+                    <p class="font-medium text-green-800">CSV Format</p>
+                    <p class="text-xs text-green-600">Comma-separated values for spreadsheets</p>
+                  </div>
+                </div>
+                <div class="flex items-center p-2 bg-blue-50 rounded">
+                  <i class="fas fa-file-code text-blue-600 mr-3"></i>
+                  <div>
+                    <p class="font-medium text-blue-800">HTML Format</p>
+                    <p class="text-xs text-blue-600">Formatted web page with styling</p>
+                  </div>
+                </div>
+                <div class="flex items-center p-2 bg-red-50 rounded">
+                  <i class="fas fa-file-pdf text-red-600 mr-3"></i>
+                  <div>
+                    <p class="font-medium text-red-800">PDF Format</p>
+                    <p class="text-xs text-red-600">Professional document format</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+              <h3 class="font-semibold text-gray-800 mb-4">
+                <i class="fas fa-bolt mr-2"></i>Quick Actions
+              </h3>
+              <div class="space-y-2">
+                <a href="{{ request.script_root }}/home" class="block text-blue-500 hover:text-blue-700 p-2 text-sm transition duration-200">
+                  <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                </a>
+                <a href="{{ request.script_root }}/payment-hub" class="block text-green-500 hover:text-green-700 p-2 text-sm transition duration-200">
+                  <i class="fas fa-store mr-2"></i>Visit Payment Hub
+                </a>
+                <a href="{{ request.script_root }}/profile" class="block text-purple-500 hover:text-purple-700 p-2 text-sm transition duration-200">
+                  <i class="fas fa-user mr-2"></i>View Profile
+                </a>
+              </div>
+            </div>
+
+            <!-- Account Information -->
+            <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg">
+              <h3 class="font-semibold text-gray-800 mb-2">📊 Account Overview</h3>
+              <ul class="text-sm text-gray-700 space-y-1">
+                <li><strong>Total Transactions:</strong> {{ transactions|length }}</li>
+                <li><strong>Account Balance:</strong> ${{ "%.2f"|format(account_summary[0][2] if account_summary else 0) }}</li>
+                <li><strong>Account Type:</strong> {{ account_summary[0][1] if account_summary else 'N/A' }}</li>
+                <li><strong>Export Date:</strong> Today</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Sidebar toggle functionality
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const mainContent = document.getElementById('mainContent');
+      const toggleIcon = document.getElementById('toggleIcon');
+      
+      sidebar.classList.toggle('hidden');
+      mainContent.classList.toggle('expanded');
+      
+      // Change icon based on sidebar state
+      if (sidebar.classList.contains('hidden')) {
+        toggleIcon.className = 'fas fa-bars';
+      } else {
+        toggleIcon.className = 'fas fa-times';
+      }
+    }
+
+    // User dropdown functionality
+    function toggleDropdown() {
+      const dropdown = document.getElementById('userDropdown');
+      dropdown.classList.toggle('show');
+    }
+
+    // Close dropdown when clicking outside
+    window.onclick = function(event) {
+      if (!event.target.matches('.avatar-container') && !event.target.closest('.avatar-container')) {
+        const dropdowns = document.getElementsByClassName('dropdown-content');
+        for (let i = 0; i < dropdowns.length; i++) {
+          const openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+          }
+        }
+      }
+    }
+
+    // Clean export functions
+    function exportCSV() {
+      alert('CSV export functionality would generate a clean CSV file with transaction data.');
+    }
+
+    function exportHTML() {
+      alert('HTML export functionality would generate a formatted web page with transaction history.');
+    }
+
+    function exportPDF() {
+      alert('PDF export functionality would generate a professional document with account statements.');
+    }
+
+    // Transaction filtering functions
+    function filterTransactions() {
+      const searchType = document.getElementById('searchType').value;
+      const searchFromDate = document.getElementById('searchFromDate').value;
+      const searchToDate = document.getElementById('searchToDate').value;
+      const searchMinAmount = parseFloat(document.getElementById('searchMinAmount').value) || 0;
+      const searchMaxAmount = parseFloat(document.getElementById('searchMaxAmount').value) || Infinity;
+      
+      const rows = document.querySelectorAll('.transaction-row');
+      let visibleCount = 0;
+      
+      rows.forEach(row => {
+        const type = row.dataset.type || '';
+        const amount = parseFloat(row.dataset.amount) || 0;
+        const date = row.dataset.date || '';
+        
+        const matchesType = !searchType || type === searchType;
+        const matchesAmount = amount >= searchMinAmount && amount <= searchMaxAmount;
+        const matchesDate = (!searchFromDate || date >= searchFromDate) && (!searchToDate || date <= searchToDate);
+        
+        if (matchesType && matchesAmount && matchesDate) {
+          row.style.display = '';
+          visibleCount++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+      
+      // Update results info
+      const resultsInfo = document.getElementById('resultsInfo');
+      const totalCount = rows.length;
+      resultsInfo.textContent = `Showing ${visibleCount} of ${totalCount} transactions`;
+      
+      // Add filter indicator
+      if (searchType || searchMinAmount > 0 || searchMaxAmount < Infinity || searchFromDate || searchToDate) {
+        resultsInfo.textContent += ' (filtered)';
+        resultsInfo.classList.add('text-blue-600', 'font-medium');
+      } else {
+        resultsInfo.classList.remove('text-blue-600', 'font-medium');
+      }
+    }
+
+    function clearFilters() {
+      // Clear all filter inputs
+      document.getElementById('searchType').value = '';
+      document.getElementById('searchFromDate').value = '';
+      document.getElementById('searchToDate').value = '';
+      document.getElementById('searchMinAmount').value = '';
+      document.getElementById('searchMaxAmount').value = '';
+      
+      // Show all rows
+      const rows = document.querySelectorAll('.transaction-row');
+      rows.forEach(row => {
+        row.style.display = '';
+      });
+      
+      // Reset results info
+      const resultsInfo = document.getElementById('resultsInfo');
+      resultsInfo.textContent = `Showing ${rows.length} transactions`;
+      resultsInfo.classList.remove('text-blue-600', 'font-medium');
+    }
+
+    // Real-time search event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      // Add change listeners to filters
+      const searchType = document.getElementById('searchType');
+      if (searchType) {
+        searchType.addEventListener('change', filterTransactions);
+      }
+      
+      const searchFromDate = document.getElementById('searchFromDate');
+      if (searchFromDate) {
+        searchFromDate.addEventListener('change', filterTransactions);
+      }
+      
+      const searchToDate = document.getElementById('searchToDate');
+      if (searchToDate) {
+        searchToDate.addEventListener('change', filterTransactions);
+      }
+      
+      const searchMinAmount = document.getElementById('searchMinAmount');
+      if (searchMinAmount) {
+        searchMinAmount.addEventListener('input', function() {
+          clearTimeout(this.searchTimeout);
+          this.searchTimeout = setTimeout(() => {
+            filterTransactions();
+          }, 500);
+        });
+      }
+      
+      const searchMaxAmount = document.getElementById('searchMaxAmount');
+      if (searchMaxAmount) {
+        searchMaxAmount.addEventListener('input', function() {
+          clearTimeout(this.searchTimeout);
+          this.searchTimeout = setTimeout(() => {
+            filterTransactions();
+          }, 500);
+        });
+      }
+    });
+  </script>
+</body>
+</html> 

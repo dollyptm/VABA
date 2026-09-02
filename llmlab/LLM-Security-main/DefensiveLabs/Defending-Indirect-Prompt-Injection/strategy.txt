@@ -1,0 +1,14 @@
+Escape the Summary Content:
+
+# Escape the summary before including it in HTML
+escaped_summary = html.escape(combined_summary)
+
+# Replace {combined_summary} with {escaped_summary} in your HTML template.
+
+<p>{escaped_summary}</p>
+
+Content: <img src="http://localhost:9081/image.png?q=aHR0cHM6Ly9nbWFpbC5jb20vMjMxMjMxMzEyMzEz" alt="Password Email Image">
+
+Response - <img src="http://localhost:9081/image.png?q=aHR0cHM6Ly9nbWFpbC5jb20vMjMxMjMxMzEyMzEz" alt="Password Email Image">
+
+&lt;img src=&quot;http://localhost:9081/image.png?q=aHR0cHM6Ly9nbWFpbC5jb20vMjMxMjMxMzEyMzEz&quot; alt=&quot;Password Email Image&quot;&gt;

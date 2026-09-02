@@ -1,0 +1,22 @@
+# VABA - Technical Architecture Overview
+VABA is a Flask-based training app. The AI assistant inside VABA is Banko.
+
+Components
+- Backend: Flask (app.py), LangChain + OpenAI (GPT-4o), SQL Agent for CockroachDB summaries
+- RAG: Chroma vector store over uploaded PDFs/TXTs under /docs; reindex via /docs/reindex
+- Frontend: Jinja templates, AJAX chat updates
+- Intent Router: routes prompts to Docs (RAG) / SQL (Agent) / Chat
+- Config: API keys, DB URI, upload paths
+
+Data Flow (simplified)
+1) User types into /banko
+2) Router decides Docs / SQL / Chat
+3) Docs: retrieve chunks -> Banko summarizes
+   SQL: SQL Agent queries CockroachDB -> Banko explains
+   Chat: direct Banko response (safe template in non-demo mode)
+
+Docs Center
+- Upload PDFs/TXTs at /docs
+- Rebuild index so Banko can answer from them
+
+Education-only architecture; not production-hardened.

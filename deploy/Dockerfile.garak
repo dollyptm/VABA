@@ -1,0 +1,26 @@
+# garak sandbox image (Tier B).
+#
+# Measured cost: garak 0.16 pulls ~5.6 GB of site-packages, largely torch and
+# transformers for its model-backed detectors. That is a quarter of this host's free
+# disk for one lab, which is why it lives in a separate image rather than being added to
+# .venv-llmbasics or the Tier B image.
+#
+# OFFLINE CONSTRAINT: Tier B runs on banko-lab-isolated with no egress, so garak cannot
+# download detector models at run time. Probe selection must therefore be limited to
+# probes whose detectors are string- or rule-based. Any probe needing a HuggingFace
+# detector will fail in the sandbox and must be either pre-baked here or excluded.
+#
+# BUILD NETWORK: Docker's default bridge has no DNS on this host and BuildKit rejects
+# custom networks, so the build needs the legacy builder:
+#
+#   DOCKER_BUILDKIT=0 docker build --network banko-lab \
+#     -f deploy/Dockerfile.garak -t banko-lab-garak:verified .
+FROM python:3.11-slim
+
+RUN pip install --no-cache-dir garak \
+ && python -c "import garak; print('garak', garak.__version__)"
+
+ENV HOME=/tmp \
+    PYTHONDONTWRITEBYTECODE=1 \
+    HF_HUB_OFFLINE=1 \
+    TRANSFORMERS_OFFLINE=1

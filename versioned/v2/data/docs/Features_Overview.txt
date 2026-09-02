@@ -1,0 +1,22 @@
+# VABA - Features Overview
+VABA is a training banking app with an integrated AI assistant (Banko).
+
+Core Features
+- Accounts: checking/savings, balances, account numbers
+- Transactions: purchases, transfers, deposits, loyalty redemptions
+- Statements/Insights: recent transactions, summaries
+- Transfers: move funds between accounts
+- Benefits & Rewards: earn points; view and redeem tiers
+- Profile & KYC: manage contact details and upload ID for verification
+- Notifications/Preferences: language, time zone, alerts
+
+AI Assistant (Banko)
+- Chat: ask about the app, your data, or fintech basics
+- Docs (RAG): uses uploaded PDFs/TXTs after indexing
+- SQL Agent: summarizes your data from the DB (read-only explanations)
+
+Docs Center
+- Upload knowledge documents at /docs, then click Rebuild Index
+- Keep documents concise and clearly structured for best results
+
+Training-only environment. Do not upload real sensitive data.

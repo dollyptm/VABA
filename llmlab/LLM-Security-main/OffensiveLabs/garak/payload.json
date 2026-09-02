@@ -1,0 +1,20 @@
+{
+    "rest": {
+       "RestGenerator": {
+          "name": "Evalation_Essay",
+          "uri": "http://127.0.0.1:3003/evaluate_essay",
+          "method": "post",
+          "headers": {
+             "Content-Type": "application/json",
+             "Origin": "http://127.0.0.1:3003"
+          },
+          "req_template_json_object": {
+             "name":"harish",
+             "topic":"Investments",
+             "essay":"$INPUT"
+          },
+          "response_json": true,
+          "response_json_field": "evaluation"
+       }
+    }
+ }

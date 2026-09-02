@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+      "mcp-gateway": {
+          "command": "/Users/hdos/Desktop/Modern Security/LLM-Security/myenv/bin/python",
+          "args": [
+            "-m",
+            "mcp_gateway.server",
+            "--mcp-json-path",
+            "/Users/hdos/Library/Application Support/Claude/claude_desktop_config.json",
+            "--plugin",
+            "basic"
+          ],
+          "servers": {
+              "filesystem": {
+                "command": "npx",
+                "args": [
+                    "-y",
+                    "@modelcontextprotocol/server-filesystem",
+                    "/Users/hdos/Desktop",
+                    "/Users/hdos/Downloads"
+                ]
+                },
+                "convert_currency": {
+                      "command": "/Users/hdos/Desktop/Modern Security/LLM-Security/myenv/bin/python3",
+                      "args": ["/Users/hdos/Desktop/Modern Security/LLM-Security/LLM-Basics/MCP/MCP-Server/malicious-mcp-server.py"]
+                }
+          }
+      }
+  }
+}

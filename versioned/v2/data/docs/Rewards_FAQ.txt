@@ -1,0 +1,19 @@
+# VABA - Rewards FAQ
+
+Q: How many points per dollar?
+A: 1 point per $1 on eligible purchases ('purchase', 'benefit_purchase').
+
+Q: Are there category bonuses?
+A: Training mode may include examples: groceries +5%, travel +10%, dining +8%.
+
+Q: Can I transfer points to other users?
+A: Not supported in this training build.
+
+Q: Do points expire?
+A: In training, assume no expiry unless stated for your session.
+
+Q: Where can I see my points?
+A: Check the Benefits page or ask Banko at /banko.
+
+Q: How do I redeem?
+A: Choose a tier on Benefits and confirm; system records a loyalty_redemption transaction. Banko will not auto-redeem without your confirmation.

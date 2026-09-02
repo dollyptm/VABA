@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Search</title>
+</head>
+<body>
+    <h1>Employee Search (Role: {{ role }})</h1>
+
+    <form method="POST">
+        <label for="search">Search Employees:</label>
+        <input type="text" id="search" name="search" placeholder="e.g., name is 'Alice'">
+        <button type="submit">Search</button>
+    </form>
+
+    <h2>Generated SQL Query:</h2>
+    <p>{{ query }}</p>
+
+    {% if results %}
+    <h2>Search Results:</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Position</th>
+                <th>Department</th>
+                <th>Salary</th>
+                <th>SSN</th>
+                <th>Email</th>
+                <th>Date of Hire</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in results %}
+            <tr>
+                <td>{{ row['id'] }}</td>
+                <td>{{ row['name'] }}</td>
+                <td>{{ row['position'] }}</td>
+                <td>{{ row['department'] }}</td>
+                <td>{{ row['salary'] }}</td>
+                <td>{{ row['ssn'] }}</td>
+                <td>{{ row['email'] }}</td>
+                <td>{{ row['date_of_hire'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</body>
+</html>

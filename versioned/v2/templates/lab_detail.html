@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {% if queued and queued not in ('invalid_inputs', 'refused') and not evidence %}
+  {# A run was just queued or is still in the spool and the broker has not written
+     evidence for it yet. Reload the same URL until it has -- this is the only
+     auto-refresh anywhere in the v2 templates, and it stops on its own the moment
+     evidence exists, since this condition then becomes false. #}
+  <meta http-equiv="refresh" content="5">
+  {% endif %}
+  <title>{{ lab_id }} · {{ lab.title }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <main class="max-w-6xl mx-auto p-6">
+    <a href="{{ request.script_root }}/labs" class="text-sm text-blue-700 hover:underline">Back to Live Labs</a>
+    <div class="flex items-center gap-3 mt-3">
+      <span class="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded">{{ lab_id }}</span>
+      <span class="text-xs px-2 py-1 rounded
+        {% if lab.tier == 'A' %}bg-blue-100 text-blue-800
+        {% elif lab.tier == 'B' %}bg-orange-100 text-orange-800
+        {% else %}bg-red-100 text-red-800{% endif %}">Tier {{ lab.tier }} · {{ tier.name }}</span>
+    </div>
+    <h1 class="text-3xl font-bold mt-3">{{ lab.title }}</h1>
+    {% if lab.summary %}<p class="text-slate-700 mt-2 max-w-4xl">{{ lab.summary }}</p>{% endif %}
+
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6 mb-6">
+      <div class="bg-white border rounded-lg p-5 shadow-sm">
+        <h2 class="text-lg font-semibold mb-3">Containment</h2>
+        <ul class="text-sm text-slate-700 space-y-1">
+          <li>Network: <span class="font-mono">{{ tier.network }}</span></li>
+          <li>Credentials: {{ 'permitted' if tier.credentials_allowed else 'refused' }}</li>
+          <li>Host mounts: {{ 'permitted' if tier.host_mounts_allowed else 'refused' }}</li>
+          <li>Sandboxed: {{ tier.requires_sandbox }}</li>
+        </ul>
+        <h3 class="font-medium mt-4 mb-1">Upstream source</h3>
+        <p class="text-xs text-slate-600 font-mono break-all">{{ lab.source }}</p>
+        {% if lab.secure_source %}
+        <p class="text-xs text-slate-600 font-mono break-all mt-1">{{ lab.secure_source }}</p>
+        {% endif %}
+      </div>
+
+      <div class="bg-white border rounded-lg p-5 shadow-sm lg:col-span-2">
+        <h2 class="text-lg font-semibold mb-3">Queue a Run</h2>
+        {% if queued == 'invalid_inputs' %}
+        <p class="text-sm text-red-800 bg-red-50 border border-red-100 rounded p-3 mb-3">Inputs must be a JSON object.</p>
+        {% elif queued == 'refused' %}
+        <p class="text-sm text-red-800 bg-red-50 border border-red-100 rounded p-3 mb-3">The runner refused this spec.</p>
+        {% elif queued and not evidence %}
+        <p class="text-sm text-green-800 bg-green-50 border border-green-100 rounded p-3 mb-3">
+          Queued <span class="font-mono">{{ queued }}</span>. Waiting for the broker to run it:
+          <span class="font-mono">python3 deploy/lab_broker.py --once</span>.
+          This page checks again every 5 seconds —
+          <a href="{{ request.script_root }}/labs/{{ lab_id }}?run_id={{ queued }}" class="underline">or check now</a>.
+        </p>
+        {% elif queued and evidence %}
+        <p class="text-sm text-green-800 bg-green-50 border border-green-100 rounded p-3 mb-3">
+          Run complete — see evidence below.
+        </p>
+        {% endif %}
+        <form action="{{ request.script_root }}/labs/{{ lab_id }}/run" method="POST" class="space-y-4">
+          <div class="flex flex-wrap gap-4">
+            <label class="inline-flex items-center gap-2">
+              <input type="radio" name="mode" value="vulnerable" checked>
+              <span>Vulnerable mode</span>
+            </label>
+            <label class="inline-flex items-center gap-2">
+              <input type="radio" name="mode" value="secure">
+              <span>Secure mode</span>
+            </label>
+          </div>
+          <label class="block">
+            <span class="text-sm font-medium text-slate-700">Model</span>
+            <select name="preset" class="mt-1 block w-full border rounded p-2 bg-white">
+              {% for name, preset in presets.items() %}
+              <option value="{{ name }}" {{ 'selected' if name == default_preset else '' }}>
+                {{ preset.label }}{{ ' · metered' if preset.metered else ' · free' }}
+              </option>
+              {% endfor %}
+            </select>
+            <span class="block text-xs text-slate-500 mt-1">
+              Which model handles the untrusted input changes the outcome. A strong model may
+              refuse an attack a weak one accepts — that difference is the lesson, not a bug.
+            </span>
+          </label>
+
+          <div class="rounded border bg-slate-50 p-3 text-xs space-y-1">
+            {% for name, preset in presets.items() %}
+            <div><span class="font-mono text-slate-700">{{ name }}</span> — {{ preset.note }}</div>
+            {% endfor %}
+          </div>
+
+          <label class="block">
+            <span class="text-sm font-medium text-slate-700">Inputs (JSON)</span>
+            <textarea name="inputs" rows="10"
+              class="mt-1 block w-full border rounded p-3 font-mono text-xs">{{ default_inputs }}</textarea>
+          </label>
+          <div class="flex flex-wrap gap-3">
+            <button class="px-4 py-2 rounded bg-amber-700 text-white hover:bg-amber-800">Queue Run</button>
+            <button formaction="{{ request.script_root }}/labs/{{ lab_id }}/compare"
+                    class="px-4 py-2 rounded bg-slate-900 text-white hover:bg-slate-700">
+              Compare across all models
+            </button>
+          </div>
+          <p class="text-xs text-slate-500">
+            Queuing writes a spec to the spool. This application cannot execute it — it holds no
+            Docker socket. Pending in spool: {{ pending | length }}.
+          </p>
+        </form>
+      </div>
+    </section>
+
+    {% if evidence %}
+    <section class="bg-white border rounded-lg p-5 shadow-sm mb-6">
+      {% set event = evidence.events[0] %}
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
+        <h2 class="text-lg font-semibold">Run Evidence</h2>
+        <span class="text-sm text-slate-500">{{ evidence.run_id }} · {{ evidence.mode }} · {{ evidence.created_at }}</span>
+      </div>
+
+      <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm mb-4">
+        <div><dt class="text-slate-500 inline">Outcome:</dt> <dd class="inline font-mono">{{ event.outcome }}</dd></div>
+        <div><dt class="text-slate-500 inline">Model called:</dt> <dd class="inline">{{ event.llm_called }}</dd></div>
+        {% if event.model_call %}
+        <div><dt class="text-slate-500 inline">Served by:</dt>
+          <dd class="inline font-mono">{{ event.model_call.backend }}:{{ event.model_call.model }}</dd>
+          {% if event.model_call.simulated %}
+          <span class="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800">simulated</span>
+          {% endif %}
+        </div>
+        <div><dt class="text-slate-500 inline">Role / preset:</dt>
+          <dd class="inline font-mono">{{ event.model_call.role }} / {{ evidence.preset or '—' }}</dd></div>
+        {% endif %}
+        <div><dt class="text-slate-500 inline">Ran in app container:</dt> <dd class="inline">{{ evidence.executed_in_app_container }}</dd></div>
+        <div><dt class="text-slate-500 inline">Tokens:</dt> <dd class="inline">{{ event.input_tokens }} in / {{ event.output_tokens }} out</dd></div>
+      </dl>
+
+      {% if event.error %}
+      <p class="text-sm text-red-800 bg-red-50 border border-red-100 rounded p-3 mb-4">{{ event.error }}</p>
+      {% endif %}
+
+      {% if event.defences_applied %}
+      <h3 class="font-medium mb-1">Defences applied</h3>
+      <p class="text-sm font-mono text-green-700 mb-3">{{ event.defences_applied | join(', ') }}</p>
+      {% endif %}
+      {% if event.blocked_reasons %}
+      <h3 class="font-medium mb-1">Blocked</h3>
+      <p class="text-sm font-mono text-red-700 mb-3">{{ event.blocked_reasons | join(', ') }}</p>
+      {% endif %}
+      {% if event.stripped_fragments %}
+      <h3 class="font-medium mb-1">Stripped from untrusted input</h3>
+      <pre class="bg-slate-50 border rounded p-3 text-xs whitespace-pre-wrap break-words mb-3">{{ event.stripped_fragments | join('\n') }}</pre>
+      {% endif %}
+
+      {% if event.context_accounting %}
+      <h3 class="font-medium mb-1">What entered the model context</h3>
+      <ul class="text-sm text-slate-700 space-y-1 mb-3">
+        <li>Authorization control: <span class="font-mono">{{ event.context_accounting.authorization_control }}</span></li>
+        <li>Records in context: {{ event.context_accounting.records_in_context }}</li>
+        <li>Foreign records in context:
+          <span class="{{ 'text-red-700 font-semibold' if event.context_accounting.foreign_records_in_context else 'text-green-700' }}">
+            {{ event.context_accounting.foreign_records_in_context }}</span></li>
+        <li>Excluded before the prompt existed: {{ event.context_accounting.owners_excluded_before_prompt | join(', ') or 'none' }}</li>
+      </ul>
+      {% endif %}
+
+      {% if event.raw_answer or event.answer or event.model_output %}
+      <h3 class="font-medium mb-1">Model output</h3>
+      <pre class="bg-slate-50 border rounded p-3 text-xs whitespace-pre-wrap break-words mb-3">{{ event.raw_answer or event.answer or event.model_output }}</pre>
+      <p class="text-xs text-slate-500 mb-3">Rendered escaped by this template; nothing executes in your browser.</p>
+      {% endif %}
+
+      {% if event.injection_succeeded is defined or event.injected_verdict_accepted is defined or event.disclosure_occurred is defined %}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3 text-sm">
+        {% if event.injected_verdict_accepted is defined %}
+        <div class="rounded p-3 {{ 'bg-red-50 border border-red-100' if event.injected_verdict_accepted else 'bg-green-50 border border-green-100' }}">
+          Injected verdict accepted: <strong>{{ event.injected_verdict_accepted }}</strong>
+        </div>
+        {% endif %}
+        {% if event.injection_succeeded is defined %}
+        <div class="rounded p-3 {{ 'bg-red-50 border border-red-100' if event.injection_succeeded else 'bg-green-50 border border-green-100' }}">
+          Injection succeeded: <strong>{{ event.injection_succeeded }}</strong>
+        </div>
+        {% endif %}
+        {% if event.disclosure_occurred is defined %}
+        <div class="rounded p-3 {{ 'bg-red-50 border border-red-100' if event.disclosure_occurred else 'bg-green-50 border border-green-100' }}">
+          Disclosure occurred: <strong>{{ event.disclosure_occurred }}</strong>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if event.lesson %}
+      <p class="text-sm text-slate-700 bg-slate-50 border rounded p-3 mb-3">{{ event.lesson }}</p>
+      {% endif %}
+
+      {% if event.model_call and event.model_call.thinking %}
+      <details class="mb-3">
+        <summary class="cursor-pointer text-sm text-slate-600">
+          Model reasoning trace ({{ event.model_call.thinking | length }} chars)
+        </summary>
+        <pre class="bg-slate-50 border rounded p-3 text-xs whitespace-pre-wrap break-words mt-2">{{ event.model_call.thinking }}</pre>
+        <p class="text-xs text-slate-500 mt-1">
+          Reasoning models expose their chain separately. Watching one reason about an
+          injected instruction shows whether it noticed the attack or simply complied.
+        </p>
+      </details>
+      {% endif %}
+
+      <details>
+        <summary class="cursor-pointer text-sm text-slate-600">Full evidence JSON</summary>
+        <pre class="bg-slate-950 text-slate-50 rounded p-4 overflow-x-auto text-xs whitespace-pre-wrap mt-2">{{ evidence | tojson(indent=2) }}</pre>
+      </details>
+    </section>
+    {% endif %}
+  </main>
+</body>
+</html>

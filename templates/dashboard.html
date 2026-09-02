@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VABA Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  /* Additional CSS if needed */
+  .card-shadow {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  .vulnerability-warning {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+  
+  /* Budget Progress Bar Styles */
+  .budget-category-item {
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #f3f4f6;
+    transition: all 0.3s ease;
+  }
+  
+  .budget-category-item:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+  
+  .budget-category-item .progress-bar {
+    overflow: hidden;
+  }
+  
+  .budget-category-item .progress-fill {
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Heatmap Styles */
+  .heatmap-container {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  
+  .heatmap-cell {
+    position: relative;
+    display: inline-block;
+    border: 1px solid #f3f4f6;
+  }
+  
+  .heatmap-cell:hover {
+    border-color: #6b7280 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Tooltip enhancement */
+  .heatmap-cell[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 100;
+    margin-bottom: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .heatmap-cell[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: #1f2937;
+    z-index: 100;
+  }
+  
+  /* Enhanced status indicators */
+  .status-healthy { color: #10b981; }
+  .status-warning { color: #f59e0b; }
+  .status-danger { color: #ef4444; }
+  
+  /* Animation for budget progress */
+  @keyframes progressFill {
+    from { width: 0%; }
+    to { width: var(--progress-width); }
+  }
+  
+  .progress-animated {
+    animation: progressFill 1s ease-out;
+  }
+  
+  /* User Avatar Dropdown Styles */
+  .user-dropdown {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: white;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    z-index: 1000;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .dropdown-content.show {
+    display: block;
+  }
+  
+  .dropdown-item {
+    color: #374151;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s;
+  }
+  
+  .dropdown-item:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .dropdown-item i {
+    margin-right: 8px;
+    width: 16px;
+  }
+  
+  .avatar-container {
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  
+  .avatar-container:hover {
+    transform: scale(1.05);
+  }
+</style>
+</head>
+<body class="bg-gray-100 font-sans">
+    
+
+    <div class="min-h-screen flex">
+    <!-- Sidebar -->
+    <aside class="w-1/4 bg-blue p-4 space-y-4 shadow-lg">
+        <h3 class="text-lg font-semibold text-gray-700">VABA</h3>
+        
+        <nav class="text-gray-600">
+          <a href="/home" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-home mr-2"></i> Home
+          </a>
+          <a href="/profile" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-user mr-2"></i> Profile Management
+          </a>
+          <a href="/transfer" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-exchange-alt mr-2"></i> Money Transfer
+          </a>
+          <a href="/payment-hub" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-store mr-2"></i> Payment Hub
+          </a>
+
+          <a href="/statements" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-file-alt mr-2"></i> Export Statements
+          </a>
+          <a href="/banko" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-robot mr-2"></i> Banko AI Assistant
+          </a>
+          <a href="/benefits" class="flex items-center py-2 hover:bg-blue-50">
+            <i class="fas fa-gift mr-2"></i> Benefits & Rewards
+          </a>
+          <a href="/admin" class="flex items-center py-2 hover:bg-blue-50 text-red-600">
+            <i class="fas fa-cog mr-2"></i> Admin Panel
+          </a>
+          <a href="/logout" class="flex items-center py-2 hover:bg-blue-50 text-gray-500">
+            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+          </a>
+        </nav>
+      </aside>
+
+  <!-- Main content -->
+  <main class="w-3/4 p-4 flex flex-col bg-white shadow-lg">
+    <div class="ml-16">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+        <div class="flex space-x-4 items-center">
+            <input type="text" placeholder="Search" class="px-4 py-2 bg-blue-50 rounded-md">
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="user-dropdown">
+                <div class="avatar-container flex flex-col items-center" onclick="toggleDropdown()">
+                    <img src="/static/profilepic.jpeg" alt="Profile" class="w-12 h-12 rounded-full object-cover border-2 border-blue-200 hover:border-blue-400">
+                    <span class="text-xs text-gray-600 mt-1 font-medium">
+                        {% if user %}{{ user.first_name }}{% else %}Guest{% endif %}
+                    </span>
+                    {% if user and user.is_admin %}
+                        <span class="text-xs text-red-500 font-bold">ADMIN</span>
+                    {% endif %}
+                </div>
+                <div class="dropdown-content" id="userDropdown">
+                    <div class="px-4 py-3 border-b border-gray-200">
+                        <p class="text-sm font-semibold text-gray-900">
+                            {% if user %}{{ user.full_name }}{% else %}Guest User{% endif %}
+                        </p>
+                        <p class="text-sm text-gray-500">
+                            {% if user %}{{ user.email }}{% else %}guest@example.com{% endif %}
+                        </p>
+                        {% if user %}
+                            <p class="text-xs text-blue-600">ID: {{ user.user_id }}</p>
+                        {% endif %}
+                    </div>
+                    <a href="/profile" class="dropdown-item">
+                        <i class="fas fa-user"></i> View Profile
+                    </a>
+                    <a href="/profile" class="dropdown-item">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </a>
+                    {% if user and user.is_admin %}
+                        <a href="/admin" class="dropdown-item text-purple-600">
+                            <i class="fas fa-shield-alt"></i> Admin Panel
+                        </a>
+                    {% endif %}
+                    <div class="border-t border-gray-200"></div>
+                    <a href="/logout" class="dropdown-item text-red-600">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Welcome message with real balance -->
+        <div class="mb-8">
+        <h1 class="text-2xl font-semibold text-gray-800">
+            Welcome back, {% if user %}{{ user.first_name }}{% else %}Guest{% endif %}!
+        </h1>
+        <p class="text-gray-600 mt-1">
+            {% if user and user.is_admin %}
+                <span class="text-red-600 font-semibold">🔐 Admin Access Active</span> - 
+                You have elevated privileges in this vulnerable banking system.
+            {% else %}
+                Manage your finances securely with Roachathon Bank.
+            {% endif %}
+        </p>
+        {% if dashboard %}
+            <div class="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                <h2 class="text-lg font-semibold text-blue-800">💰 Total Balance Across All Accounts</h2>
+                <p class="text-2xl font-bold text-blue-900">${{ "%.2f"|format(dashboard.total_balance if dashboard.total_balance else 0) }}</p>
+                {% if dashboard.accounts %}
+                    <p class="text-sm text-blue-600 mt-2">
+                        Across {{ dashboard.accounts|length }} account{{ 's' if dashboard.accounts|length != 1 else '' }}
+                    </p>
+                {% endif %}
+            </div>
+        {% endif %}
+        </div>
+
+        <!-- Dashboard widgets -->
+        <div class="grid grid-cols-12 gap-4">
+        <!-- Budget Bar Chart -->
+        <div class="col-span-4 card-shadow bg-white p-4 rounded-lg">
+            <div class="flex justify-between border-b border-gray-200 pb-4">
+                <h1 class="font-semibold text-lg">📊 Monthly Budget Tracker</h1>
+                <select id="monthSelect" name="monthSelect" class="text-blue-500 hover:text-blue-600 transition duration-300">
+                    <option>August 2025</option>
+                    <!-- Add more months as needed -->
+                </select>
+            </div>
+            
+            <div class="mt-4">
+                <!-- Chart Container -->
+                <div class="relative h-64">
+                    <canvas id="budgetChart"></canvas>
+                </div>
+                
+                <!-- Budget Summary Stats -->
+                <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+                    {% if dashboard and dashboard.budget_progress %}
+                        {% set total_spent = dashboard.budget_progress.values() | map(attribute='spent') | sum %}
+                        {% set total_budget = dashboard.budget_progress.values() | map(attribute='budget') | sum %}
+                        {% set overall_progress = ((total_spent / total_budget) * 100) if total_budget > 0 else 0 %}
+                        
+                        <div class="bg-gray-50 p-2 rounded-lg">
+                            <div class="text-sm font-bold text-gray-800">${{ "%.0f"|format(total_spent) }}</div>
+                            <div class="text-xs text-gray-600">Spent</div>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded-lg">
+                            <div class="text-sm font-bold text-gray-800">${{ "%.0f"|format(total_budget) }}</div>
+                            <div class="text-xs text-gray-600">Budget</div>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded-lg">
+                            <div class="text-sm font-bold 
+                                {% if overall_progress <= 60 %}text-green-600
+                                {% elif overall_progress <= 85 %}text-yellow-600
+                                {% else %}text-red-600{% endif %}">
+                                {{ "%.1f"|format(overall_progress) }}%
+                            </div>
+                            <div class="text-xs text-gray-600">Used</div>
+                        </div>
+                    {% else %}
+                        <!-- Fallback stats -->
+                        <div class="bg-gray-50 p-2 rounded-lg">
+                            <div class="text-sm font-bold text-gray-800">$0</div>
+                            <div class="text-xs text-gray-600">Spent</div>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded-lg">
+                            <div class="text-sm font-bold text-gray-800">$1,550</div>
+                            <div class="text-xs text-gray-600">Budget</div>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded-lg">
+                            <div class="text-sm font-bold text-green-600">0%</div>
+                            <div class="text-xs text-gray-600">Used</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions -->
+        <div class="col-span-4 card-shadow bg-white p-4 rounded-lg">
+              <div class="flex justify-between border-b border-gray-200 pb-4">
+                <h1 class="font-semibold text-lg">Recent Transactions</h1>
+                {% if dashboard and dashboard.transactions %}
+                  <a href="/statements" class="text-blue-500 hover:text-blue-600 transition duration-300">
+                    View All ({{ dashboard.transactions|length }}) →
+                  </a>
+                {% else %}
+                  <a href="/statements" class="text-blue-500 hover:text-blue-600 transition duration-300">View All →</a>
+                {% endif %}
+              </div>
+            
+            <div class="mt-4 space-y-3 max-h-80 overflow-y-auto">
+              {% if dashboard and dashboard.transactions %}
+                {% for transaction in dashboard.transactions[:8] %}
+                  <div class="flex items-center justify-between py-2 border-b border-gray-50">
+                    <div class="flex items-center">
+                      {% if transaction.is_income %}
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                          <i class="fas fa-arrow-down text-green-600"></i>
+                        </div>
+                      {% else %}
+                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                          <i class="fas fa-arrow-up text-red-600"></i>
+                        </div>
+                      {% endif %}
+                      <div>
+                        <p class="text-sm font-medium text-gray-800">{{ transaction.description|truncate(30) }}</p>
+                        <p class="text-xs text-gray-500">{{ transaction.date.strftime('%b %d, %Y') if transaction.date else 'N/A' }}</p>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      {% if transaction.is_income %}
+                        <span class="text-sm font-semibold text-green-600">+${{ transaction.amount|abs }}</span>
+                      {% else %}
+                        <span class="text-sm font-semibold text-red-600">-${{ transaction.amount|abs }}</span>
+                      {% endif %}
+                      <p class="text-xs text-gray-500 capitalize">{{ transaction.status or 'completed' }}</p>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <!-- Empty state -->
+                <div class="text-center py-8">
+                  <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-receipt text-gray-400"></i>
+                  </div>
+                  <p class="text-sm text-gray-500">No recent transactions</p>
+                  <p class="text-xs text-gray-400">Start making purchases in the Payment Hub</p>
+                </div>
+              {% endif %}
+            </div>
+        </div>
+
+        <!-- My cards -->
+        <div class="col-span-4 card-shadow bg-white p-4 rounded-lg">
+            <div class="flex justify-between border-b border-gray-200 pb-4">
+                <h1 class="font-semibold text-lg">My cards</h1>
+                <button id="toggleCardDetails" onclick="toggleCardVisibility()" class="text-blue-500 hover:text-blue-600 transition duration-300 text-sm flex items-center">
+                    <i id="eyeIcon" class="fas fa-eye mr-1"></i>
+                    <span id="toggleText">Show Details</span>
+                </button>
+            </div>
+            <div class="mt-4">
+                <!-- Credit card visual -->
+                <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white mb-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-xs opacity-75">Balance</p>
+                            {% if dashboard and dashboard.credit_info %}
+                              <p class="text-2xl font-bold">${{ "%.2f"|format(dashboard.credit_info.balance if dashboard.credit_info.balance else 0) }}</p>
+                            {% else %}
+                              <p class="text-2xl font-bold">$12,750.30</p>
+                            {% endif %}
+                        </div>
+                        <img src="/static/creditcard.png" alt="Card" class="w-12 h-8 opacity-75">
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="text-xs opacity-75">Card Number</p>
+                            {% if dashboard and dashboard.credit_info %}
+                              <p id="cardNumber" class="text-sm">**** **** **** {{ dashboard.credit_info.account_number[-4:] if dashboard.credit_info.account_number else '1234' }}</p>
+                              <p id="fullCardNumber" class="text-sm hidden">{{ dashboard.credit_info.account_number if dashboard.credit_info.account_number else '1234 5678 9012 3456' }}</p>
+                            {% else %}
+                              <p id="cardNumber" class="text-sm">**** **** **** 1234</p>
+                              <p id="fullCardNumber" class="text-sm hidden">1234 5678 9012 3456</p>
+                            {% endif %}
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs opacity-75">Expires</p>
+                            <p id="expiryDate" class="text-sm">**/**</p>
+                            <p id="fullExpiryDate" class="text-sm hidden">12/26</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex justify-between items-center">
+                        <div>
+                            <p class="text-xs opacity-75">CVV</p>
+                            <p id="cvvNumber" class="text-sm">***</p>
+                            <p id="fullCvvNumber" class="text-sm hidden">456</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs opacity-75">Cardholder</p>
+                            <p id="cardholderName" class="text-sm">{{ user.full_name if user and user.full_name else 'JOHN DOE' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spending Heatmap - Full Width at Bottom -->
+        <div class="col-span-12 card-shadow bg-white p-6 rounded-lg mt-4">
+            <div class="flex justify-between border-b border-gray-200 pb-4">
+                <h1 class="font-semibold text-lg">🔥 Spending Heatmap</h1>
+                <span class="text-xs text-gray-500">Last 4 weeks</span>
+            </div>
+            
+            <div class="mt-6">
+                <!-- Heatmap Grid -->
+                <div class="heatmap-container max-w-2xl mx-auto">
+                    <!-- Day labels -->
+                    <div class="flex justify-between text-xs text-gray-400 mb-3 ml-12">
+                        <span>Mon</span>
+                        <span>Tue</span>
+                        <span>Wed</span>
+                        <span>Thu</span>
+                        <span>Fri</span>
+                        <span>Sat</span>
+                        <span>Sun</span>
+                    </div>
+                    
+                    <!-- Heatmap grid -->
+                    <div class="space-y-2">
+                        {% if dashboard and dashboard.heatmap_data %}
+                            {% for week_data in dashboard.heatmap_data %}
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs text-gray-400 w-8">W{{ loop.index }}</span>
+                                    {% for day_data in week_data %}
+                                        <div class="heatmap-cell w-8 h-8 rounded cursor-pointer transition-all duration-200 hover:scale-110
+                                            {% if day_data.intensity == 0 %}bg-gray-100
+                                            {% elif day_data.intensity <= 0.2 %}bg-green-200
+                                            {% elif day_data.intensity <= 0.4 %}bg-yellow-200
+                                            {% elif day_data.intensity <= 0.6 %}bg-orange-200
+                                            {% elif day_data.intensity <= 0.8 %}bg-red-200
+                                            {% else %}bg-red-400{% endif %}"
+                                            title="{{ day_data.day_name }}, {{ day_data.date }}: ${{ "%.2f"|format(day_data.spending) }}">
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Fallback empty heatmap -->
+                            {% for week in range(4) %}
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs text-gray-400 w-8">W{{ week + 1 }}</span>
+                                    {% for day in range(7) %}
+                                        <div class="heatmap-cell w-8 h-8 rounded bg-gray-100"></div>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Heatmap legend -->
+                    <div class="flex items-center justify-center mt-6 text-xs text-gray-500">
+                        <span class="mr-3">Less</span>
+                        <div class="flex space-x-1">
+                            <div class="w-4 h-4 bg-gray-100 rounded"></div>
+                            <div class="w-4 h-4 bg-green-200 rounded"></div>
+                            <div class="w-4 h-4 bg-yellow-200 rounded"></div>
+                            <div class="w-4 h-4 bg-orange-200 rounded"></div>
+                            <div class="w-4 h-4 bg-red-200 rounded"></div>
+                            <div class="w-4 h-4 bg-red-400 rounded"></div>
+                        </div>
+                        <span class="ml-3">More</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Enhanced New transaction button -->
+        <div class="fixed bottom-8 right-8">
+          <div class="relative group">
+            <a href="/transfer" class="block bg-blue-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 shadow-lg transition-all duration-300 hover:shadow-xl">
+                <i class="fas fa-plus mr-2"></i>New Transaction
+            </a>
+            
+            <!-- Quick balance tooltip on hover -->
+            {% if dashboard %}
+              <div class="absolute bottom-full mb-2 right-0 bg-gray-900 text-white px-3 py-2 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                <div class="text-xs text-gray-300">Available Balance</div>
+                <div class="font-semibold">${{ "%.2f"|format(dashboard.total_balance if dashboard.total_balance else 0) }}</div>
+                <div class="absolute top-full right-4 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-gray-900"></div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Budget Bar Chart Implementation
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Budget Bar Chart
+    const budgetCtx = document.getElementById('budgetChart').getContext('2d');
+    
+    {% if dashboard and dashboard.budget_progress %}
+      const budgetData = {{ dashboard.budget_progress|tojson }};
+      
+      // Prepare chart data
+      const categories = Object.keys(budgetData);
+      const spentData = categories.map(cat => budgetData[cat].spent);
+      const budgetLimits = categories.map(cat => budgetData[cat].budget);
+      const remainingData = categories.map(cat => budgetData[cat].remaining);
+      
+    {% else %}
+      // Fallback data
+      const categories = ['Shopping', 'Food', 'Transport', 'Bills', 'Others'];
+      const spentData = [0, 0, 0, 0, 0];
+      const budgetLimits = [500, 400, 200, 300, 150];
+      const remainingData = [500, 400, 200, 300, 150];
+    {% endif %}
+    
+    const budgetChart = new Chart(budgetCtx, {
+      type: 'bar',
+      data: {
+        labels: categories,
+        datasets: [
+          {
+            label: 'Spent',
+            data: spentData,
+            backgroundColor: [
+              'rgba(59, 130, 246, 0.8)',   // Blue for Shopping
+              'rgba(16, 185, 129, 0.8)',   // Green for Food
+              'rgba(251, 191, 36, 0.8)',   // Yellow for Transport
+              'rgba(79, 70, 229, 0.8)',    // Indigo for Bills
+              'rgba(156, 163, 175, 0.8)'   // Gray for Others
+            ],
+            borderColor: [
+              'rgb(59, 130, 246)',
+              'rgb(16, 185, 129)',
+              'rgb(251, 191, 36)',
+              'rgb(79, 70, 229)',
+              'rgb(156, 163, 175)'
+            ],
+            borderWidth: 2,
+            borderRadius: 4,
+            borderSkipped: false
+          },
+          {
+            label: 'Remaining',
+            data: remainingData,
+            backgroundColor: [
+              'rgba(59, 130, 246, 0.2)',
+              'rgba(16, 185, 129, 0.2)',
+              'rgba(251, 191, 36, 0.2)',
+              'rgba(79, 70, 229, 0.2)',
+              'rgba(156, 163, 175, 0.2)'
+            ],
+            borderColor: [
+              'rgb(59, 130, 246)',
+              'rgb(16, 185, 129)',
+              'rgb(251, 191, 36)',
+              'rgb(79, 70, 229)',
+              'rgb(156, 163, 175)'
+            ],
+            borderWidth: 1,
+            borderRadius: 4,
+            borderSkipped: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        plugins: {
+          title: {
+            display: false
+          },
+          legend: {
+            position: 'top',
+            labels: {
+              usePointStyle: true,
+              padding: 20,
+              font: {
+                size: 12
+              }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              title: function(context) {
+                return context[0].label + ' Category';
+              },
+              label: function(context) {
+                const datasetLabel = context.dataset.label;
+                const value = context.raw;
+                const categoryIndex = context.dataIndex;
+                const budget = budgetLimits[categoryIndex];
+                const spent = spentData[categoryIndex];
+                const percentage = budget > 0 ? ((spent / budget) * 100).toFixed(1) : 0;
+                
+                if (datasetLabel === 'Spent') {
+                  return `${datasetLabel}: $${value.toFixed(2)} (${percentage}% of budget)`;
+                } else {
+                  return `${datasetLabel}: $${value.toFixed(2)}`;
+                }
+              },
+              afterBody: function(context) {
+                const categoryIndex = context[0].dataIndex;
+                const budget = budgetLimits[categoryIndex];
+                return `Budget Limit: $${budget.toFixed(2)}`;
+              }
+            },
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: 'white',
+            bodyColor: 'white',
+            borderColor: 'rgba(255, 255, 255, 0.2)',
+            borderWidth: 1
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              font: {
+                size: 11
+              }
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.1)'
+            },
+            ticks: {
+              callback: function(value) {
+                return '$' + value.toFixed(0);
+              },
+              font: {
+                size: 11
+              }
+            }
+          }
+        },
+        animation: {
+          duration: 1500,
+          easing: 'easeOutQuart'
+        }
+      }
+    });
+    
+    // Add hover effects to heatmap cells
+    const heatmapCells = document.querySelectorAll('.heatmap-cell');
+    heatmapCells.forEach(cell => {
+      cell.addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.2)';
+        this.style.zIndex = '10';
+      });
+      
+      cell.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+        this.style.zIndex = '1';
+      });
+    });
+  });
+
+  // Enhanced budget analytics
+  function calculateTotalBudgetUsage() {
+    {% if dashboard and dashboard.budget_progress %}
+      const budgetData = {{ dashboard.budget_progress|tojson }};
+      let totalSpent = 0;
+      let totalBudget = 0;
+      
+      Object.values(budgetData).forEach(category => {
+        totalSpent += category.spent;
+        totalBudget += category.budget;
+      });
+      
+      const overallProgress = ((totalSpent / totalBudget) * 100).toFixed(1);
+      console.log(`Overall budget usage: ${overallProgress}%`);
+      
+      return {
+        totalSpent: totalSpent,
+        totalBudget: totalBudget,
+        percentage: overallProgress
+      };
+    {% endif %}
+  }
+
+  // Heatmap interaction functions
+  function getSpendingInsights() {
+    {% if dashboard and dashboard.heatmap_data %}
+      const heatmapData = {{ dashboard.heatmap_data|tojson }};
+      let totalDays = 0;
+      let spendingDays = 0;
+      let totalSpending = 0;
+      
+      heatmapData.forEach(week => {
+        week.forEach(day => {
+          totalDays++;
+          if (day.spending > 0) {
+            spendingDays++;
+            totalSpending += day.spending;
+          }
+        });
+      });
+      
+      const avgDailySpending = spendingDays > 0 ? (totalSpending / spendingDays).toFixed(2) : 0;
+      const spendingFrequency = ((spendingDays / totalDays) * 100).toFixed(1);
+      
+      console.log(`Spending insights: Avg daily: $${avgDailySpending}, Frequency: ${spendingFrequency}%`);
+      
+      return {
+        avgDailySpending: avgDailySpending,
+        spendingFrequency: spendingFrequency,
+        totalSpending: totalSpending.toFixed(2)
+      };
+    {% endif %}
+  }
+
+  // Payment Hub integration - redirect to specific category
+  function quickBuyCategory(category) {
+    window.location.href = `/payment-hub?category=${category}`;
+  }
+
+  // User dropdown functionality
+  function toggleDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('show');
+  }
+
+  // Close dropdown when clicking outside
+  window.onclick = function(event) {
+    if (!event.target.matches('.avatar-container') && !event.target.closest('.avatar-container')) {
+      const dropdowns = document.getElementsByClassName('dropdown-content');
+      for (let i = 0; i < dropdowns.length; i++) {
+        const openDropdown = dropdowns[i];
+        if (openDropdown.classList.contains('show')) {
+          openDropdown.classList.remove('show');
+        }
+      }
+    }
+  }
+
+  // Card visibility toggle function
+  function toggleCardVisibility() {
+    const cardNumber = document.getElementById('cardNumber');
+    const fullCardNumber = document.getElementById('fullCardNumber');
+    const expiryDate = document.getElementById('expiryDate');
+    const fullExpiryDate = document.getElementById('fullExpiryDate');
+    const cvvNumber = document.getElementById('cvvNumber');
+    const fullCvvNumber = document.getElementById('fullCvvNumber');
+    const eyeIcon = document.getElementById('eyeIcon');
+    const toggleText = document.getElementById('toggleText');
+    
+    const isHidden = cardNumber.classList.contains('hidden');
+    
+    if (isHidden) {
+      // Show masked details, hide full details
+      cardNumber.classList.remove('hidden');
+      fullCardNumber.classList.add('hidden');
+      expiryDate.classList.remove('hidden');
+      fullExpiryDate.classList.add('hidden');
+      cvvNumber.classList.remove('hidden');
+      fullCvvNumber.classList.add('hidden');
+      
+      eyeIcon.classList.remove('fa-eye-slash');
+      eyeIcon.classList.add('fa-eye');
+      toggleText.textContent = 'Show Details';
+    } else {
+      // Show full details, hide masked details
+      cardNumber.classList.add('hidden');
+      fullCardNumber.classList.remove('hidden');
+      expiryDate.classList.add('hidden');
+      fullExpiryDate.classList.remove('hidden');
+      cvvNumber.classList.add('hidden');
+      fullCvvNumber.classList.remove('hidden');
+      
+      eyeIcon.classList.remove('fa-eye');
+      eyeIcon.classList.add('fa-eye-slash');
+      toggleText.textContent = 'Hide Details';
+    }
+  }
+
+  // Initialize analytics on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    calculateTotalBudgetUsage();
+    getSpendingInsights();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+# Environment variables
+.env
+myenv/
+.DS_Store
+./OffensiveLabs/Model-Backdoor/PyTorchModels/
+OffensiveLabs/Model-Backdoor/PyTorchModels/
+# Snyk Security Extension - AI Rules (auto-generated)
+.cursor/rules/snyk_rules.mdc
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Model files and checkpoints
+*.pt
+*.pth
+*.safetensors
+*.bin
+*.ckpt
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.pb
+*.onnx
+*.tflite
+*.tfl
+*.mlmodel
+
+# Model directories
+**/checkpoint-*/
+**/*-model/
+**/models/
+**/model/
+**/sentiment-model/
+**/PyTorchModels/
+
+# MLflow
+mlflow.db
+**/mlruns/
+**/.mlflow/
+
+# Model training artifacts
+**/optimizer.pt
+**/scheduler.pt
+**/rng_state.pth
+**/training_args.bin
+
+# Large data files
+*.csv
+*.parquet
+*.feather
+*.arrow
+*.db
+*.sqlite
+*.sqlite3
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Model signatures (if they contain large files)
+**/.sigstore/
+
+# Large binary files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z

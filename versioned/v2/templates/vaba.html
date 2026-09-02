@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VABA Attack Paths</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <main class="max-w-6xl mx-auto p-6">
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
+      <div>
+        <p class="text-sm font-semibold text-purple-700">Banko V2 Lab</p>
+        <h1 class="text-3xl font-bold">VABA Attack Paths</h1>
+        <p class="text-slate-600 mt-2 max-w-3xl">
+          Agentic AI banking scenarios for tool abuse, orchestration trust, unsafe output handling, and controlled SSRF behavior.
+        </p>
+      </div>
+      <div class="flex gap-3">
+        <a href="{{ request.script_root }}/llm-vulns" class="px-4 py-2 rounded bg-white border text-slate-700 hover:bg-slate-100">LLM Catalog</a>
+        <a href="{{ request.script_root }}/catalog" class="px-4 py-2 rounded bg-white border text-slate-700 hover:bg-slate-100">Catalog</a>
+        <a href="{{ request.script_root }}/labs" class="px-4 py-2 rounded bg-amber-600 text-white hover:bg-amber-700">Live Labs</a>
+        <a href="{{ request.script_root }}/banko" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Banko Chat</a>
+      </div>
+    </div>
+
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      {% for scenario in scenarios %}
+      <article class="bg-white border rounded-lg p-5 shadow-sm">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-xs font-bold text-purple-700 bg-purple-50 px-2 py-1 rounded">{{ scenario.id }}</span>
+          <span class="text-xs text-slate-500">{{ scenario.attack_paths | length }} paths</span>
+        </div>
+        <h2 class="text-xl font-semibold mt-4">{{ scenario.title }}</h2>
+        <p class="text-sm text-slate-600 mt-2">{{ scenario.theme }}</p>
+        <p class="text-sm text-slate-700 mt-4">{{ scenario.description }}</p>
+        <a href="{{ request.script_root }}/vaba/{{ scenario.id }}" class="inline-flex mt-5 px-4 py-2 rounded bg-slate-900 text-white hover:bg-slate-700">
+          Open Scenario
+        </a>
+      </article>
+      {% endfor %}
+    </section>
+
+    <section class="bg-white border rounded-lg p-5 shadow-sm">
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <h2 class="text-xl font-semibold">Recent Evidence</h2>
+          <p class="text-sm text-slate-600">V2-only run traces captured by the VABA lab.</p>
+        </div>
+        <form action="{{ request.script_root }}/vaba/reset" method="POST">
+          <button class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">Reset Evidence</button>
+        </form>
+      </div>
+      <div class="divide-y">
+        {% for run in runs %}
+        <a href="{{ request.script_root }}/vaba/evidence/{{ run.run_id }}" class="block py-3 hover:bg-slate-50">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-1">
+            <div class="font-medium">{{ run.scenario_id }} · {{ run.scenario_title }}</div>
+            <div class="text-sm text-slate-500">{{ run.mode }} · {{ run.created_at }}</div>
+          </div>
+          <div class="text-sm text-slate-600 truncate">{{ run.user_input }}</div>
+        </a>
+        {% else %}
+        <div class="py-6 text-slate-500">No VABA evidence runs yet. Open a scenario and run a lab step.</div>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+</body>
+</html>

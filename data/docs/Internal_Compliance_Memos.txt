@@ -1,0 +1,19 @@
+# VABA - Internal Compliance Memos (Training)
+High-level guidance for training.
+
+Acceptable Use
+- No illegal content or activity
+- No real PII or secrets in the training environment
+
+Prohibited Transactions
+- Transactions designed to evade monitoring or sanctions
+- Attempts to simulate real-world laundering with real accounts
+
+Monitoring Thresholds (Examples)
+- Large transaction triggers (e.g., >= $10,000)
+- Rapid multiple transfers across accounts
+- Unusual patterns for the user profile
+
+Record-Keeping & Escalation
+- Keep transaction metadata
+- Escalate ambiguous or risky cases to a trainer or designated reviewer

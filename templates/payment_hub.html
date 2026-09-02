@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment Hub - Vulnerable Banking App</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  /* Sidebar & UI Styles */
+  .sidebar {
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(0);
+  }
+  .sidebar.hidden {
+    transform: translateX(-100%);
+  }
+  .main-content {
+    transition: margin-left 0.3s ease-in-out;
+    margin-left: 25%; /* 1/4 width when sidebar visible */
+  }
+  .main-content.expanded {
+    margin-left: 60px; /* Leave space for toggle button when sidebar hidden */
+  }
+  .toggle-btn {
+    transition: all 0.3s ease;
+    z-index: 1000;
+    width: 40px;
+    height: 40px;
+  }
+  
+  /* User Avatar Dropdown Styles */
+  .user-dropdown {
+    position: relative;
+    display: inline-block;
+  }
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: white;
+    min-width: 250px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1000;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+  .dropdown-content.show {
+    display: block;
+  }
+  .dropdown-item {
+    color: #374151;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s;
+  }
+  .dropdown-item:hover {
+    background-color: #f3f4f6;
+  }
+  .dropdown-item i {
+    margin-right: 8px;
+    width: 16px;
+  }
+  .avatar-container {
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .avatar-container:hover {
+    transform: scale(1.05);
+  }
+  
+  /* Store Item Cards */
+  .store-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .store-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  }
+  
+  /* Category Tabs */
+  .category-tab {
+    transition: all 0.3s ease;
+  }
+  .category-tab.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: translateY(-2px);
+  }
+</style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+<div class="min-h-screen flex relative">
+  <!-- Sidebar Toggle Button -->
+  <button onclick="toggleSidebar()" class="toggle-btn fixed top-4 left-4 z-50 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-lg">
+    <i id="toggleIcon" class="fas fa-bars"></i>
+  </button>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar w-1/4 bg-white p-4 space-y-4 shadow-lg fixed h-full overflow-y-auto">
+    <div class="mt-12">
+      <h3 class="text-lg font-semibold text-gray-700">VABA</h3>
+      <nav class="text-gray-600 mt-4">
+        <a href="/home" class="flex items-center py-2 hover:bg-blue-50">
+          <i class="fas fa-home mr-2"></i> Home
+        </a>
+        <a href="/profile" class="flex items-center py-2 hover:bg-blue-50">
+          <i class="fas fa-user mr-2"></i> Profile Management
+        </a>
+        <a href="/transfer" class="flex items-center py-2 hover:bg-blue-50">
+          <i class="fas fa-exchange-alt mr-2"></i> Money Transfer
+        </a>
+        <a href="/payment-hub" class="flex items-center py-2 hover:bg-blue-50 bg-blue-100 text-blue-700">
+          <i class="fas fa-store mr-2"></i> Payment Hub
+        </a>
+        
+        <a href="/statements" class="flex items-center py-2 hover:bg-blue-50">
+          <i class="fas fa-file-alt mr-2"></i> Export Statements
+        </a>
+        <a href="/banko" class="flex items-center py-2 hover:bg-blue-50">
+          <i class="fas fa-robot mr-2"></i> Banko AI Assistant
+        </a>
+        <a href="/benefits" class="flex items-center py-2 hover:bg-blue-50">
+          <i class="fas fa-gift mr-2"></i> Benefits & Rewards
+        </a>
+        <a href="/admin" class="flex items-center py-2 hover:bg-blue-50 text-red-600">
+          <i class="fas fa-cog mr-2"></i> Admin Panel
+        </a>
+        <a href="/logout" class="flex items-center py-2 hover:bg-blue-50 text-gray-500">
+          <i class="fas fa-sign-out-alt mr-2"></i> Logout
+        </a>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main id="mainContent" class="main-content w-full bg-white shadow-lg min-h-screen">
+    <div class="p-6">
+      <div class="ml-16">
+        <!-- Header with User Info -->
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800">Payment Hub</h1>
+          <p class="text-gray-600 mt-1">Shop from our mini store - expenses automatically categorized on your dashboard</p>
+        </div>
+        
+        <!-- User Avatar Dropdown -->
+        <div class="user-dropdown">
+          <div class="avatar-container flex flex-col items-center" onclick="toggleDropdown()">
+            <img src="/static/profilepic.jpeg" alt="Profile" class="w-12 h-12 rounded-full object-cover border-2 border-blue-200 hover:border-blue-400">
+            <span class="text-xs text-gray-600 mt-1 font-medium">
+              {% if user %}{{ user.first_name }}{% else %}Guest{% endif %}
+            </span>
+            {% if user and user.is_admin %}
+              <span class="text-xs text-red-500 font-bold">ADMIN</span>
+            {% endif %}
+          </div>
+          <div class="dropdown-content" id="userDropdown">
+            <div class="px-4 py-3 border-b border-gray-200">
+              <p class="text-sm font-semibold text-gray-900">
+                {% if user %}{{ user.full_name }}{% else %}Guest User{% endif %}
+              </p>
+              <p class="text-sm text-gray-500">
+                {% if user %}{{ user.email }}{% else %}guest@example.com{% endif %}
+              </p>
+              {% if user %}
+                <p class="text-xs text-blue-600">ID: {{ user.user_id }}</p>
+              {% endif %}
+            </div>
+            <a href="/home" class="dropdown-item">
+              <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="/profile" class="dropdown-item">
+              <i class="fas fa-user"></i> View Profile
+            </a>
+            {% if user and user.is_admin %}
+              <a href="/admin" class="dropdown-item text-purple-600">
+                <i class="fas fa-shield-alt"></i> Admin Panel
+              </a>
+            {% endif %}
+            <div class="border-t border-gray-200"></div>
+            <a href="/logout" class="dropdown-item text-red-600">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current Balance Display -->
+      <div class="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-lg shadow-lg mb-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold">Available Balance</h2>
+            <p class="text-3xl font-bold">${{ "%.2f"|format(total_balance) }}</p>
+            <p class="text-green-100 text-sm mt-1">Ready for purchases</p>
+          </div>
+          <div class="text-6xl opacity-20">
+            <i class="fas fa-wallet"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Success/Error Messages -->
+      {% if success %}
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          <i class="fas fa-check-circle mr-2"></i>{{ success }}
+        </div>
+      {% endif %}
+      
+      {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <i class="fas fa-exclamation-circle mr-2"></i>{{ error }}
+        </div>
+      {% endif %}
+
+      <!-- Category Tabs -->
+      <div class="mb-6">
+        <div class="flex flex-wrap gap-2">
+          <button onclick="showCategory('shopping')" class="category-tab active px-6 py-3 rounded-lg font-semibold text-sm">
+            <i class="fas fa-shopping-bag mr-2"></i>Shopping
+          </button>
+          <button onclick="showCategory('food')" class="category-tab px-6 py-3 rounded-lg font-semibold text-sm bg-white hover:bg-gray-50">
+            <i class="fas fa-utensils mr-2"></i>Food & Dining
+          </button>
+          <button onclick="showCategory('transport')" class="category-tab px-6 py-3 rounded-lg font-semibold text-sm bg-white hover:bg-gray-50">
+            <i class="fas fa-car mr-2"></i>Transport
+          </button>
+          <button onclick="showCategory('bills')" class="category-tab px-6 py-3 rounded-lg font-semibold text-sm bg-white hover:bg-gray-50">
+            <i class="fas fa-file-invoice-dollar mr-2"></i>Bills & Utilities
+          </button>
+          <button onclick="showCategory('others')" class="category-tab px-6 py-3 rounded-lg font-semibold text-sm bg-white hover:bg-gray-50">
+            <i class="fas fa-ellipsis-h mr-2"></i>Others
+          </button>
+        </div>
+      </div>
+
+      <!-- Store Categories -->
+      {% for category, items in store_items.items() %}
+      <div id="category-{{ category }}" class="category-content" {% if category != 'shopping' %}style="display: none;"{% endif %}>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {% for item in items %}
+          <div class="store-card bg-white rounded-lg shadow-md p-6 border border-gray-200">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex-1">
+                <h3 class="font-semibold text-lg text-gray-800 mb-2">{{ item.name }}</h3>
+                <p class="text-gray-600 text-sm mb-3">{{ item.description }}</p>
+                <div class="flex items-center justify-between">
+                  <span class="text-2xl font-bold text-green-600">${{ "%.2f"|format(item.price) }}</span>
+                  <div class="text-right">
+                    <span class="text-xs text-gray-500 uppercase tracking-wider">{{ category.title() }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <form method="POST" class="purchase-form">
+              <input type="hidden" name="category" value="{{ category }}">
+              <input type="hidden" name="item_name" value="{{ item.name }}">
+              <input type="hidden" name="item_price" value="{{ item.price }}">
+              
+              <button type="submit" 
+                      class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition duration-300 flex items-center justify-center"
+                      {% if total_balance < item.price %}disabled{% endif %}>
+                {% if total_balance < item.price %}
+                  <i class="fas fa-times mr-2"></i>Insufficient Funds
+                {% else %}
+                  <i class="fas fa-shopping-cart mr-2"></i>Purchase Now
+                {% endif %}
+              </button>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Expense Integration Info -->
+      <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 class="font-semibold text-blue-800 mb-2">
+          <i class="fas fa-chart-pie mr-2"></i>Dashboard Integration
+        </h3>
+        <p class="text-blue-700 text-sm">
+          All purchases made here will automatically appear in your dashboard's "Expenses by Category" chart and recent transactions list. 
+          This helps you track your spending patterns across Shopping, Food, Transport, Bills, and Other categories.
+        </p>
+      </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    
+    sidebar.classList.toggle('hidden');
+    mainContent.classList.toggle('expanded');
+  }
+
+  function toggleDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('show');
+  }
+
+  function showCategory(categoryName) {
+    // Hide all categories
+    const categories = document.querySelectorAll('.category-content');
+    categories.forEach(cat => cat.style.display = 'none');
+    
+    // Remove active class from all tabs
+    const tabs = document.querySelectorAll('.category-tab');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    
+    // Show selected category
+    const targetCategory = document.getElementById(`category-${categoryName}`);
+    if (targetCategory) {
+      targetCategory.style.display = 'block';
+    }
+    
+    // Add active class to clicked tab
+    event.target.classList.add('active');
+  }
+
+  // Close dropdown when clicking outside
+  window.onclick = function(event) {
+    if (!event.target.matches('.avatar-container') && !event.target.closest('.avatar-container')) {
+      const dropdowns = document.getElementsByClassName('dropdown-content');
+      for (let i = 0; i < dropdowns.length; i++) {
+        const openDropdown = dropdowns[i];
+        if (openDropdown.classList.contains('show')) {
+          openDropdown.classList.remove('show');
+        }
+      }
+    }
+  }
+</script>
+</body>
+</html> 

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Labs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <main class="max-w-6xl mx-auto p-6">
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
+      <div>
+        <p class="text-sm font-semibold text-amber-700">Banko V2 Lab</p>
+        <h1 class="text-3xl font-bold">Live Labs</h1>
+        <p class="text-slate-600 mt-2 max-w-3xl">
+          These labs <strong>genuinely execute</strong>. They make real model calls and run real
+          processes inside disposable sandboxes. The simulation-only scenarios live under
+          <a href="{{ request.script_root }}/vaba" class="text-blue-700 hover:underline">VABA</a>.
+        </p>
+      </div>
+      <div class="flex gap-3">
+        <a href="{{ request.script_root }}/vaba" class="px-4 py-2 rounded bg-white border text-slate-700 hover:bg-slate-100">VABA</a>
+        <a href="{{ request.script_root }}/catalog" class="px-4 py-2 rounded bg-white border text-slate-700 hover:bg-slate-100">Catalog</a>
+        <a href="{{ request.script_root }}/llm-vulns" class="px-4 py-2 rounded bg-white border text-slate-700 hover:bg-slate-100">LLM Catalog</a>
+      </div>
+    </div>
+
+    <section class="bg-amber-50 border border-amber-200 rounded-lg p-5 mb-6">
+      <h2 class="font-semibold text-amber-900">How a run happens</h2>
+      <p class="text-sm text-amber-900 mt-2">
+        This application cannot start containers: it holds no Docker socket by design. Pressing
+        <em>Queue Run</em> writes a run spec to the spool. A host-side broker picks it up,
+        re-validates it against its own registry, and executes it in a sandbox:
+      </p>
+      <pre class="bg-white border rounded p-3 text-xs mt-3 overflow-x-auto">python3 deploy/lab_broker.py --once     # drain the spool
+python3 deploy/lab_broker.py --watch    # keep draining</pre>
+      <p class="text-sm text-amber-900 mt-2">
+        Pending in spool: <strong>{{ pending | length }}</strong>
+      </p>
+    </section>
+
+    <section class="bg-white border rounded-lg p-5 shadow-sm mb-6">
+      <h2 class="text-lg font-semibold mb-3">Model API Budget</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div><div class="text-slate-500">Spent</div><div class="text-xl font-semibold">${{ '%.4f' % budget.spent }}</div></div>
+        <div><div class="text-slate-500">Remaining</div><div class="text-xl font-semibold">${{ '%.4f' % budget.remaining }}</div></div>
+        <div><div class="text-slate-500">Total cap</div><div class="text-xl font-semibold">${{ '%.2f' % budget.cap }}</div></div>
+        <div><div class="text-slate-500">Per-run cap</div><div class="text-xl font-semibold">${{ '%.2f' % budget.per_run_cap }}</div></div>
+      </div>
+      <p class="text-sm text-slate-600 mt-3">
+        The cap is a hard stop checked before a request is sent, not a warning.
+      </p>
+    </section>
+
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      {% for lab_id, lab in labs.items() %}
+      <article class="bg-white border rounded-lg p-5 shadow-sm">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded">{{ lab_id }}</span>
+          <div class="flex items-center gap-2">
+            <span class="text-xs px-2 py-1 rounded
+              {% if lab.tier == 'A' %}bg-blue-100 text-blue-800
+              {% elif lab.tier == 'B' %}bg-orange-100 text-orange-800
+              {% else %}bg-red-100 text-red-800{% endif %}">
+              Tier {{ lab.tier }} · {{ tiers[lab.tier].name }}
+            </span>
+            {% if not lab.implemented %}
+            <span class="text-xs px-2 py-1 rounded bg-slate-100 text-slate-600">planned</span>
+            {% endif %}
+          </div>
+        </div>
+        <h2 class="text-lg font-semibold mt-4">{{ lab.title }}</h2>
+        {% if lab.summary %}
+        <p class="text-sm text-slate-600 mt-2">{{ lab.summary }}</p>
+        {% endif %}
+        <p class="text-xs text-slate-500 mt-3">{{ tiers[lab.tier].summary }}</p>
+        {% if lab.implemented %}
+        <a href="{{ request.script_root }}/labs/{{ lab_id }}"
+           class="inline-flex mt-4 px-4 py-2 rounded bg-slate-900 text-white hover:bg-slate-700">Open Lab</a>
+        {% else %}
+        <span class="inline-flex mt-4 px-4 py-2 rounded bg-slate-100 text-slate-500">Not yet implemented</span>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </section>
+
+    <section class="bg-white border rounded-lg p-5 shadow-sm">
+      <h2 class="text-xl font-semibold mb-1">Recent Live Runs</h2>
+      <p class="text-sm text-slate-600 mb-4">Evidence captured from genuinely executed sandbox runs.</p>
+      <div class="divide-y">
+        {% for run in runs %}
+        <a href="{{ request.script_root }}/labs/evidence/{{ run.run_id }}" class="block py-3 hover:bg-slate-50">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-1">
+            <div class="font-medium">{{ run.lab_id }} · {{ run.lab_title }}</div>
+            <div class="text-sm text-slate-500">tier {{ run.tier }} · {{ run.mode }} · {{ run.created_at }}</div>
+          </div>
+          <div class="text-sm text-slate-600">{{ run.events[0].outcome }}</div>
+        </a>
+        {% else %}
+        <p class="text-sm text-slate-500 py-3">No live runs captured yet.</p>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# LLM-Basics / ThreatModel / Tier A-B lab environment.
+# Deliberately torch-free: the heavy ML stack (torch, transformers, datasets, mlflow,
+# modelscan) belongs to .venv-mlsupply for Tier C and is not installed here.
+openai
+python-dotenv
+langchain
+langchain_community
+langchain_openai
+langchain_text_splitters
+faiss-cpu
+mcp
+requests
+beautifulsoup4
+flask
+flask-cors
+colorama
+langsmith
+sqlalchemy

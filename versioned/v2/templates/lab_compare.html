@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model comparison · {{ comparison_id }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <main class="max-w-6xl mx-auto p-6">
+    <a href="{{ request.script_root }}/labs" class="text-sm text-blue-700 hover:underline">Back to Live Labs</a>
+    <h1 class="text-3xl font-bold mt-3">
+      {% if lab %}{{ lab.title }}{% else %}Model comparison{% endif %}
+    </h1>
+    <p class="text-slate-600 mt-2 max-w-3xl">
+      The same attack, the same input, the same mode — only the model tier differs.
+      Queuing the runs as one group is what keeps the comparison honest: the inputs
+      cannot drift between them.
+    </p>
+    <p class="text-sm text-slate-500 mt-2 font-mono">{{ comparison_id }}</p>
+
+    {% if pending %}
+    <section class="bg-amber-50 border border-amber-200 rounded-lg p-5 my-6">
+      <p class="text-sm text-amber-900">
+        <strong>{{ pending | length }}</strong> run(s) still queued. The application cannot
+        execute them; run the broker on the host, then reload this page:
+      </p>
+      <pre class="bg-white border rounded p-3 text-xs mt-3 overflow-x-auto">python3 deploy/lab_broker.py --once</pre>
+    </section>
+    {% endif %}
+
+    {% if rows %}
+    <section class="bg-white border rounded-lg p-5 shadow-sm my-6">
+      <h2 class="text-lg font-semibold mb-1">
+        {{ lab.headline_label if lab else 'Outcome' }}
+      </h2>
+      <p class="text-sm text-slate-600 mb-4">
+        A red cell means the attack worked against that tier. A model that resists here is
+        not a fixed defence — it is one model's behaviour on one prompt, and it can change
+        with a rephrasing or a model update.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm border">
+          <thead class="bg-slate-50 text-left">
+            <tr>
+              <th class="p-2 border-b">Preset</th>
+              <th class="p-2 border-b">Model</th>
+              <th class="p-2 border-b">Mode</th>
+              <th class="p-2 border-b">{{ lab.headline_label if lab else 'Outcome' }}</th>
+              <th class="p-2 border-b">Run</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            <tr class="{% if row.headline is sameas true %}bg-red-50{% elif row.headline is sameas false %}bg-green-50{% endif %}">
+              <td class="p-2 border-b font-mono">{{ row.preset }}</td>
+              <td class="p-2 border-b font-mono">
+                {{ row.model or '—' }}
+                {% if row.simulated %}
+                <span class="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">simulated</span>
+                {% endif %}
+              </td>
+              <td class="p-2 border-b">{{ row.mode }}</td>
+              <td class="p-2 border-b font-semibold">
+                {% if row.headline is sameas true %}
+                <span class="text-red-800">yes — attack worked</span>
+                {% elif row.headline is sameas false %}
+                <span class="text-green-800">no — attack did not work</span>
+                {% else %}
+                <span class="text-slate-500">{{ row.outcome }}</span>
+                {% endif %}
+              </td>
+              <td class="p-2 border-b">
+                <a href="{{ request.script_root }}/labs/evidence/{{ row.run_id }}"
+                   class="text-blue-700 hover:underline font-mono text-xs">evidence</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="bg-white border rounded-lg p-5 shadow-sm">
+      <h2 class="text-lg font-semibold mb-3">Reading this table</h2>
+      <ul class="text-sm text-slate-700 space-y-2">
+        <li><strong>Rows differing only by model</strong> are the finding. If one tier is red
+          and another green, capability is the only variable that changed.</li>
+        <li><strong>A green row is not a fix.</strong> It records that this model, on this
+          prompt, on this day, declined. Structural defences — what enters the context, how
+          untrusted content is labelled, whether a server-side check ran — hold regardless.</li>
+        <li><strong>Simulated rows come from the deterministic stub.</strong> They exist to
+          make outcomes reproducible and are not evidence about any real model.</li>
+      </ul>
+    </section>
+    {% elif not pending %}
+    <p class="text-sm text-slate-500 my-6">No runs found for this comparison.</p>
+    {% endif %}
+  </main>
+</body>
+</html>

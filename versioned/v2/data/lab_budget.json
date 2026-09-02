@@ -1,0 +1,331 @@
+{
+  "runs": [
+    {
+      "at": "2026-08-07T09:26:56.610633Z",
+      "cost_usd": 0.0,
+      "input_tokens": 244,
+      "model": "gpt-oss:120b",
+      "output_tokens": 468,
+      "priced": false,
+      "run_id": "lab-20260807092651-bb24e129"
+    },
+    {
+      "at": "2026-08-07T09:27:41.308912Z",
+      "cost_usd": 0.0,
+      "input_tokens": 244,
+      "model": "gpt-oss:20b",
+      "output_tokens": 433,
+      "priced": false,
+      "run_id": "lab-20260807092735-b2d85969"
+    },
+    {
+      "at": "2026-08-07T09:28:11.073536Z",
+      "cost_usd": 0.0,
+      "input_tokens": 229,
+      "model": "gpt-oss:20b",
+      "output_tokens": 760,
+      "priced": false,
+      "run_id": "lab-20260807092801-5eee6b40"
+    },
+    {
+      "at": "2026-08-07T09:28:17.726794Z",
+      "cost_usd": 0.0,
+      "input_tokens": 352,
+      "model": "gpt-oss:20b",
+      "output_tokens": 554,
+      "priced": false,
+      "run_id": "lab-20260807092811-bb944d71"
+    },
+    {
+      "at": "2026-08-07T09:28:20.359397Z",
+      "cost_usd": 0.0,
+      "input_tokens": 278,
+      "model": "gpt-oss:20b",
+      "output_tokens": 179,
+      "priced": false,
+      "run_id": "lab-20260807092817-b4d0a6a0"
+    },
+    {
+      "at": "2026-08-07T09:28:23.268212Z",
+      "cost_usd": 0.0,
+      "input_tokens": 183,
+      "model": "gpt-oss:20b",
+      "output_tokens": 139,
+      "priced": false,
+      "run_id": "lab-20260807092820-f3e5dbdb"
+    },
+    {
+      "at": "2026-08-07T09:30:44.260520Z",
+      "cost_usd": 0.0,
+      "input_tokens": 229,
+      "model": "gpt-oss:20b",
+      "output_tokens": 285,
+      "priced": false,
+      "run_id": "lab-20260807093039-7f0a2e32"
+    },
+    {
+      "at": "2026-08-07T09:30:49.159629Z",
+      "cost_usd": 0.0,
+      "input_tokens": 352,
+      "model": "gpt-oss:20b",
+      "output_tokens": 349,
+      "priced": false,
+      "run_id": "lab-20260807093044-c4d28f87"
+    },
+    {
+      "at": "2026-08-07T09:30:51.976011Z",
+      "cost_usd": 0.0,
+      "input_tokens": 278,
+      "model": "gpt-oss:20b",
+      "output_tokens": 202,
+      "priced": false,
+      "run_id": "lab-20260807093049-23737430"
+    },
+    {
+      "at": "2026-08-07T09:30:54.039231Z",
+      "cost_usd": 0.0,
+      "input_tokens": 183,
+      "model": "gpt-oss:20b",
+      "output_tokens": 115,
+      "priced": false,
+      "run_id": "lab-20260807093051-8d78ee33"
+    },
+    {
+      "at": "2026-08-07T09:31:00.998805Z",
+      "cost_usd": 0.0,
+      "input_tokens": 244,
+      "model": "gpt-oss:120b",
+      "output_tokens": 496,
+      "priced": false,
+      "run_id": "lab-20260807093054-6ebee908"
+    },
+    {
+      "at": "2026-08-07T09:31:05.970545Z",
+      "cost_usd": 0.0,
+      "input_tokens": 229,
+      "model": "gpt-oss:20b",
+      "output_tokens": 276,
+      "priced": false,
+      "run_id": "lab-20260807093101-29117c0e"
+    },
+    {
+      "at": "2026-08-07T09:31:59.675539Z",
+      "cost_usd": 0.0,
+      "input_tokens": 229,
+      "model": "gpt-oss:20b",
+      "output_tokens": 292,
+      "priced": false,
+      "run_id": "lab-20260807093155-37576dd3"
+    },
+    {
+      "at": "2026-08-07T09:32:03.937209Z",
+      "cost_usd": 0.0,
+      "input_tokens": 352,
+      "model": "gpt-oss:20b",
+      "output_tokens": 415,
+      "priced": false,
+      "run_id": "lab-20260807093159-97b8ea34"
+    },
+    {
+      "at": "2026-08-07T09:32:06.753509Z",
+      "cost_usd": 0.0,
+      "input_tokens": 278,
+      "model": "gpt-oss:20b",
+      "output_tokens": 206,
+      "priced": false,
+      "run_id": "lab-20260807093203-126dfee2"
+    },
+    {
+      "at": "2026-08-07T09:32:09.034458Z",
+      "cost_usd": 0.0,
+      "input_tokens": 183,
+      "model": "gpt-oss:20b",
+      "output_tokens": 130,
+      "priced": false,
+      "run_id": "lab-20260807093206-9e0f7d3d"
+    },
+    {
+      "at": "2026-08-07T09:32:15.910019Z",
+      "cost_usd": 0.0,
+      "input_tokens": 244,
+      "model": "gpt-oss:120b",
+      "output_tokens": 306,
+      "priced": false,
+      "run_id": "lab-20260807093209-6d90860b"
+    },
+    {
+      "at": "2026-08-07T09:32:22.176397Z",
+      "cost_usd": 0.0,
+      "input_tokens": 229,
+      "model": "gpt-oss:20b",
+      "output_tokens": 600,
+      "priced": false,
+      "run_id": "lab-20260807093216-c964da34"
+    },
+    {
+      "at": "2026-08-07T09:32:42.386424Z",
+      "cost_usd": 0.0,
+      "input_tokens": 278,
+      "model": "gpt-oss:20b",
+      "output_tokens": 204,
+      "priced": false,
+      "run_id": "lab-20260807093238-31c61853"
+    },
+    {
+      "at": "2026-08-07T09:32:44.949042Z",
+      "cost_usd": 0.0,
+      "input_tokens": 183,
+      "model": "gpt-oss:20b",
+      "output_tokens": 133,
+      "priced": false,
+      "run_id": "lab-20260807093242-d5f8ae80"
+    },
+    {
+      "at": "2026-08-07T10:56:13.168410Z",
+      "cost_usd": 0.0,
+      "input_tokens": 244,
+      "model": "gpt-oss:20b",
+      "output_tokens": 458,
+      "priced": false,
+      "run_id": "lab-20260807105607-6d6846f8"
+    },
+    {
+      "at": "2026-08-07T11:17:29.706796Z",
+      "cost_usd": 0.0,
+      "input_tokens": 358,
+      "model": "gpt-oss:20b -> gpt-oss:120b",
+      "output_tokens": 333,
+      "priced": false,
+      "run_id": "lab-20260807111723-f6b54cec"
+    },
+    {
+      "at": "2026-08-07T11:18:05.857578Z",
+      "cost_usd": 0.0,
+      "input_tokens": 448,
+      "model": "gpt-oss:20b -> gpt-oss:120b",
+      "output_tokens": 382,
+      "priced": false,
+      "run_id": "lab-20260807111801-e9b9bacb"
+    },
+    {
+      "at": "2026-08-07T11:18:11.522491Z",
+      "cost_usd": 0.0,
+      "input_tokens": 407,
+      "model": "gpt-oss:120b / gpt-oss:20b",
+      "output_tokens": 378,
+      "priced": false,
+      "run_id": "lab-20260807111805-fedd91c7"
+    },
+    {
+      "at": "2026-08-07T11:19:22.383950Z",
+      "cost_usd": 0.0,
+      "input_tokens": 508,
+      "model": "gpt-oss:120b / gpt-oss:20b",
+      "output_tokens": 401,
+      "priced": false,
+      "run_id": "lab-20260807111916-4a161e05"
+    },
+    {
+      "at": "2026-08-07T18:26:46.026152Z",
+      "cost_usd": 0.0,
+      "input_tokens": 357,
+      "model": "gpt-oss:120b -> gpt-oss:120b",
+      "output_tokens": 249,
+      "priced": false,
+      "run_id": "lab-20260807182641-5d36cb1d"
+    },
+    {
+      "at": "2026-08-07T18:26:49.770553Z",
+      "cost_usd": 0.0,
+      "input_tokens": 359,
+      "model": "gpt-oss:20b -> gpt-oss:120b",
+      "output_tokens": 295,
+      "priced": false,
+      "run_id": "lab-20260807182641-bd9f1678"
+    },
+    {
+      "at": "2026-08-07T18:26:52.696544Z",
+      "cost_usd": 0.0,
+      "input_tokens": 358,
+      "model": "gpt-oss:20b -> gpt-oss:20b",
+      "output_tokens": 266,
+      "priced": false,
+      "run_id": "lab-20260807182641-e2b19c98"
+    },
+    {
+      "at": "2026-08-08T18:08:46.250255Z",
+      "cost_usd": 0.0,
+      "input_tokens": 157,
+      "model": "gpt-oss:20b",
+      "output_tokens": 174,
+      "priced": false,
+      "run_id": "lab-20260808180844-fbf43a5c"
+    },
+    {
+      "at": "2026-08-08T18:10:26.896529Z",
+      "cost_usd": 0.0,
+      "input_tokens": 157,
+      "model": "gpt-oss:20b",
+      "output_tokens": 174,
+      "priced": false,
+      "run_id": "lab-20260808181024-335297a1"
+    },
+    {
+      "at": "2026-08-10T23:40:35.458711Z",
+      "cost_usd": 0.0,
+      "input_tokens": 0,
+      "model": "gpt-4o-mini",
+      "output_tokens": 0,
+      "priced": true,
+      "run_id": "lab-20260810234004-5ea4354f"
+    },
+    {
+      "at": "2026-08-10T23:41:30.311951Z",
+      "cost_usd": 0.0,
+      "input_tokens": 0,
+      "model": "gpt-4o-mini",
+      "output_tokens": 0,
+      "priced": true,
+      "run_id": "lab-20260810234056-d4b487bf"
+    },
+    {
+      "at": "2026-08-10T23:45:06.278756Z",
+      "cost_usd": 0.0,
+      "input_tokens": 0,
+      "model": "gpt-4o-mini",
+      "output_tokens": 0,
+      "priced": true,
+      "run_id": "lab-20260810234429-ea33883c"
+    },
+    {
+      "at": "2026-08-11T07:44:58.113699Z",
+      "cost_usd": 0.0,
+      "input_tokens": 187,
+      "model": "gpt-oss:20b",
+      "output_tokens": 400,
+      "priced": false,
+      "run_id": "lab-20260811074452-d028ecd7"
+    },
+    {
+      "at": "2026-08-11T07:46:22.554294Z",
+      "cost_usd": 0.0,
+      "input_tokens": 238,
+      "model": "gpt-oss:20b",
+      "output_tokens": 311,
+      "priced": false,
+      "run_id": "lab-20260811074619-f5198692"
+    },
+    {
+      "at": "2026-08-11T09:32:29.638353Z",
+      "cost_usd": 0.0,
+      "input_tokens": 139,
+      "model": "gpt-oss:20b",
+      "output_tokens": 1800,
+      "priced": false,
+      "run_id": "lab-20260811093208-db64ab2f"
+    }
+  ],
+  "total_usd": 0.0,
+  "unpriced_runs": 33,
+  "unpriced_tokens": 21101
+}
